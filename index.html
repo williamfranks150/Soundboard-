@@ -369,7 +369,8 @@ function syncTrimControls(){
  $('trimStartTime').max=Math.max(0,duration-.01);
  $('trimEndTime').max=duration;
  $('trimStart').value=trimStart;$('trimEnd').value=trimEnd;
- $('trimStartTime').value=trimStart.toFixed(2);$('trimEndTime').value=trimEnd.toFixed(2);
+ if(document.activeElement!==$('trimStartTime'))$('trimStartTime').value=trimStart.toFixed(2);
+ if(document.activeElement!==$('trimEndTime'))$('trimEndTime').value=trimEnd.toFixed(2);
  $('trimDuration').textContent='· '+(trimEnd-trimStart).toFixed(2)+' s';
 }
 async function setPreview(blob,soundId=null){
@@ -425,8 +426,9 @@ function selectedDraftBlob(){
 }
 $('trimStart').oninput=e=>changeTrim('start',Number(e.target.value));
 $('trimEnd').oninput=e=>changeTrim('end',Number(e.target.value));
-$('trimStartTime').onchange=e=>changeTrim('start',e.target.value===''?NaN:Number(e.target.value));
-$('trimEndTime').onchange=e=>changeTrim('end',e.target.value===''?NaN:Number(e.target.value));
+$('trimStartTime').oninput=$('trimStartTime').onchange=e=>changeTrim('start',e.target.value===''?NaN:Number(e.target.value));
+$('trimEndTime').oninput=$('trimEndTime').onchange=e=>changeTrim('end',e.target.value===''?NaN:Number(e.target.value));
+$('trimStartTime').onblur=$('trimEndTime').onblur=()=>{if(trimBuffer)syncTrimControls()};
 $('resetTrim').onclick=()=>{if(!trimBuffer)return;stopDraftPreview();trimStart=0;trimEnd=trimBuffer.duration;syncTrimControls()};
 $('preview').onplay=updatePreviewButton;$('preview').onpause=updatePreviewButton;
 $('preview').onended=()=>{stopDraftPreview()};
