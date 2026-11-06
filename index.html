@@ -104,16 +104,35 @@ header h1{font-family:ui-rounded,"Arial Rounded MT Bold","Trebuchet MS",system-u
   transition:none!important;
 }
 .rubber:not(.finger-down){transition:transform 85ms ease-out,box-shadow 85ms ease-out!important}
-</style></head><body><header><h1>Soundboard</h1><button class="gear" id="settings" aria-label="Settings">⚙</button></header><main><div class="board" id="board"><div class="cell"><div class="well"><button class="rubber" style="--c:#e6b96d" aria-label="Empty button 1"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#eaa18c" aria-label="Empty button 2"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#9ccda9" aria-label="Empty button 3"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#a4c4e5" aria-label="Empty button 4"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#c7a6d8" aria-label="Empty button 5"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#e8cb83" aria-label="Empty button 6"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#8dc9bd" aria-label="Empty button 7"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#df9baf" aria-label="Empty button 8"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#b2c98c" aria-label="Empty button 9"></button></div><div class="name">Empty</div></div></div><p class="hint">Tap to play · Hold to change · Tap an empty button to add a sound</p></main>
+</style></head><body><header><h1>Soundboard</h1><button class="gear" id="settings" aria-label="Settings">⚙</button></header><main><div class="board" id="board"><div class="cell"><div class="well"><button class="rubber" style="--c:#e6b96d" aria-label="Jeopardy; tap to play"></button></div><div class="name">Jeopardy</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#eaa18c" aria-label="Empty button 2"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#9ccda9" aria-label="Empty button 3"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#a4c4e5" aria-label="Empty button 4"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#c7a6d8" aria-label="Empty button 5"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#e8cb83" aria-label="Empty button 6"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#8dc9bd" aria-label="Empty button 7"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#df9baf" aria-label="Empty button 8"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#b2c98c" aria-label="Empty button 9"></button></div><div class="name">Empty</div></div></div><p class="hint">Tap to play · Hold to change · Tap an empty button to add a sound</p></main>
 <dialog id="editor"><div class="dialoghead"><h2 id="editTitle">Choose sound</h2><button class="close" id="closeEditor" aria-label="Close">×</button></div><div class="tabs" role="tablist"><button class="tab" data-tab="music" style="background:#f5d98d">Music</button><button class="tab" data-tab="quotes" style="background:#f5bfa8">Quotes</button><button class="tab" data-tab="effects" style="background:#bde0c6">Effects</button><button class="tab" data-tab="mine" style="background:#b8d5ee">My Sounds</button></div><div class="panel" id="panel"><div id="minePanel" class="stack"><label>Button label<input class="input" id="label" maxlength="45" placeholder="Name your sound"></label><div class="actions"><button class="primary" id="record">● Record</button><button class="secondary" id="import">Import audio</button><input type="file" id="file" hidden></div><p class="small">Import an audio file from Files, including MP3, M4A and WAV.</p><p class="status" id="recordStatus" aria-live="polite"></p><audio id="preview" controls class="hidden" style="width:100%"></audio><div class="actions"><button class="secondary" id="playPreview">▶ Preview</button><button class="primary" id="save">Use This Sound</button></div><button class="danger" id="clear">Clear button</button><div class="small">Your recordings and imports are stored locally on this device for offline playback.</div><strong>Saved sounds</strong><div id="library"></div></div><div id="otherPanel" class="hidden stack"><p>Online sound catalogues are not included in this standalone offline version. Record or import audio under My Sounds.</p><button class="secondary" id="goMine">Go to My Sounds</button></div></div></dialog>
 <dialog id="settingsDialog"><div class="dialoghead"><h2>Settings</h2><button class="close" id="closeSettings">×</button></div><div style="padding:20px"><p>9 rubber buttons in a fixed 3 × 3 grid.</p><p>Audio is stored on this device, not uploaded. Your browser may delete local storage if website data is cleared.</p><p><strong>Microphone:</strong> Recording requires HTTPS or localhost in Safari/Chrome. Opening this file directly may prevent microphone access.</p><p>Made with plain HTML, CSS and JavaScript. No libraries, accounts or fees.</p></div></dialog>
 <script>
 'use strict';
 const $=id=>document.getElementById(id),colors=['#e6b96d','#eaa18c','#9ccda9','#a4c4e5','#c7a6d8','#e8cb83','#8dc9bd','#df9baf','#b2c98c','#c4b4e6','#e5b48f','#a5cbd1'];
-let slots=Array.from({length:9},(_,i)=>({id:i,name:'Empty',soundId:null})),sounds=[],active=0,tab='mine',recorder=null,chunks=[],recordStream=null,recordBlob=null,previewURL=null,playing=null,db;
+const builtinSounds=[{id:'builtin-jeopardy',name:'Jeopardy',url:'audio/jeopardy-think-music.mp3'}];
+let slots=Array.from({length:9},(_,i)=>({id:i,name:i===0?'Jeopardy':'Empty',soundId:i===0?'builtin-jeopardy':null})),sounds=[...builtinSounds],active=0,tab='mine',recorder=null,chunks=[],recordStream=null,recordBlob=null,previewURL=null,playing=null,db;
 let request; try { request=indexedDB.open('rubber-soundboard-v1',1); } catch(e) { console.warn('Storage unavailable',e); }
 if(request) request.onupgradeneeded=()=>{const d=request.result;if(!d.objectStoreNames.contains('sounds'))d.createObjectStore('sounds',{keyPath:'id'});if(!d.objectStoreNames.contains('meta'))d.createObjectStore('meta')};
-if(request) request.onsuccess=async()=>{db=request.result;try{const s=await get('meta','slots');if(Array.isArray(s)&&s.length>=9)slots=s.slice(0,9); sounds=await allSounds();}catch(e){console.error(e)}render();};
+if(request) request.onsuccess=async()=>{
+ db=request.result;
+ try{
+  const s=await get('meta','slots');
+  if(Array.isArray(s)&&s.length>=9)slots=s.slice(0,9);
+  sounds=[...builtinSounds,...await allSounds()];
+  await installBundledSound();
+ }catch(e){console.error(e)}
+ render();
+};
+async function installBundledSound(){
+ if(await get('meta','bundled-jeopardy-v1'))return;
+ const empty=slots.findIndex(slot=>!slot.soundId);
+ if(!slots.some(slot=>slot.soundId==='builtin-jeopardy')&&empty!==-1){
+  slots[empty]={id:empty,name:'Jeopardy',soundId:'builtin-jeopardy'};
+ }
+ await put('meta',slots,'slots');
+ await put('meta',true,'bundled-jeopardy-v1');
+}
 if(request) request.onerror=()=>{console.warn('Storage unavailable');render()};
 function transaction(store,mode='readonly'){if(!db)throw Error('Persistent storage is unavailable in this preview. Open through a normal Safari HTTPS page.');return db.transaction(store,mode).objectStore(store)}
 function get(store,key){return new Promise((resolve,reject)=>{let r=transaction(store).get(key);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
@@ -179,7 +198,7 @@ function stopPlayback(){
  const url=audio.src;
  audio.removeAttribute('src');
  audio.load();
- URL.revokeObjectURL(url);
+ if(url.startsWith('blob:'))URL.revokeObjectURL(url);
 }
 async function playSound(id){
  const sound=sounds.find(s=>s.id===id);
@@ -187,7 +206,7 @@ async function playSound(id){
  const stopOnly=playing?.soundId===id;
  stopPlayback();
  if(stopOnly)return;
- const url=URL.createObjectURL(sound.blob);
+ const url=sound.blob?URL.createObjectURL(sound.blob):sound.url;
  const audio=new Audio(url);
  audio.soundId=id;
  playing=audio;
