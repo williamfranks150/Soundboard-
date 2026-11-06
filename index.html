@@ -187,6 +187,12 @@ function render(){
   const label=document.createElement('div');label.className='name';label.textContent=slot.name;
   cell.append(well,label);board.append(cell);
  });
+ updatePlaybackButtons();
+}
+function updatePlaybackButtons(){
+ document.querySelectorAll('#board .rubber').forEach((button,i)=>{
+  button.setAttribute('aria-pressed',String(!!(playing&&!playing.paused&&slots[i].soundId===playing.soundId)));
+ });
 }
 function stopPlayback(){
  if(!playing)return;
@@ -199,6 +205,7 @@ function stopPlayback(){
  audio.removeAttribute('src');
  audio.load();
  if(url.startsWith('blob:'))URL.revokeObjectURL(url);
+ updatePlaybackButtons();
 }
 async function playSound(id){
  const sound=sounds.find(s=>s.id===id);
@@ -210,6 +217,7 @@ async function playSound(id){
  const audio=new Audio(url);
  audio.soundId=id;
  playing=audio;
+ audio.onplaying=()=>{if(playing===audio)updatePlaybackButtons()};
  audio.onended=()=>{if(playing===audio)stopPlayback()};
  try{await audio.play()}
  catch(e){
