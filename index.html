@@ -260,6 +260,13 @@ function updatePlaybackButtons(){
  document.querySelectorAll('#board .rubber').forEach((button,i)=>{
   button.setAttribute('aria-pressed',String(!!(playing&&!playing.paused&&slots[i].soundId===playing.soundId)));
  });
+ document.querySelectorAll('#library .sound-preview').forEach(button=>{
+  const isPlaying=!!(playing&&!playing.paused&&button.dataset.soundId===playing.soundId);
+  button.textContent=isPlaying?'⏸':'▶';
+  button.title=isPlaying?'Stop preview':'Play preview';
+  button.setAttribute('aria-label',(isPlaying?'Stop ':'Play ')+button.dataset.soundName+' preview');
+  button.setAttribute('aria-pressed',String(isPlaying));
+ });
 }
 function stopPlayback(){
  if(!playing)return;
@@ -298,7 +305,7 @@ async function playSound(id){
 function openEditor(i){active=i;recordBlob=null;resetPreview();$('label').value=slots[i].name==='Empty'?'':slots[i].name;$('editTitle').textContent='My Sounds';$('recordStatus').textContent='';$('record').textContent='● Record';renderLibrary();$('editor').showModal()}
 function resetPreview(){if(previewURL)URL.revokeObjectURL(previewURL);previewURL=null;$('preview').pause();$('preview').removeAttribute('src');$('preview').classList.add('hidden')}
 function setPreview(blob){resetPreview();previewURL=URL.createObjectURL(blob);$('preview').src=previewURL;$('preview').classList.remove('hidden')}
-function renderLibrary(){const target=$('library');target.replaceChildren();for(const sound of sounds){const row=document.createElement('div');row.className='library-item';const name=document.createElement('span');name.textContent=sound.name;const listen=document.createElement('button');listen.textContent='▶';listen.title='Preview';listen.onclick=()=>playSound(sound.id);const use=document.createElement('button');use.textContent='Use';use.onclick=async()=>{slots[active]={id:active,name:sound.name,soundId:sound.id};await put('meta',slots,'slots');render();$('editor').close()};row.append(name,listen,use);target.append(row)}if(!sounds.length)target.textContent='No saved sounds yet.'}
+function renderLibrary(){const target=$('library');target.replaceChildren();for(const sound of sounds){const row=document.createElement('div');row.className='library-item';const name=document.createElement('span');name.textContent=sound.name;const listen=document.createElement('button');listen.className='sound-preview';listen.dataset.soundId=sound.id;listen.dataset.soundName=sound.name;listen.textContent='▶';listen.title='Play preview';listen.onclick=()=>playSound(sound.id);const use=document.createElement('button');use.textContent='Use';use.onclick=async()=>{slots[active]={id:active,name:sound.name,soundId:sound.id};await put('meta',slots,'slots');render();$('editor').close()};row.append(name,listen,use);target.append(row)}if(!sounds.length)target.textContent='No saved sounds yet.';updatePlaybackButtons()}
 $('record').onclick=async()=>{if(recorder?.state==='recording'){recorder.stop();return}if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){$('recordStatus').textContent='Microphone recording needs HTTPS or localhost in a supported browser.';return}try{recordStream=await navigator.mediaDevices.getUserMedia({audio:true});chunks=[];const type=['audio/mp4','audio/webm;codecs=opus','audio/webm'].find(t=>MediaRecorder.isTypeSupported(t));recorder=new MediaRecorder(recordStream,type?{mimeType:type}:undefined);recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};recorder.onstop=()=>{recordBlob=new Blob(chunks,{type:recorder.mimeType||'audio/mp4'});recordStream.getTracks().forEach(t=>t.stop());recordStream=null;setPreview(recordBlob);$('recordStatus').textContent='Recording ready. Preview, then tap Use This Sound.';$('record').textContent='● Record'};recorder.start();$('record').textContent='■ Stop recording';$('recordStatus').textContent='Recording… tap Stop when finished.'}catch(e){$('recordStatus').textContent='Microphone unavailable: '+e.message}}
 // Leave the picker unrestricted: iOS Files can classify downloaded MP3s as
 // generic data and disable them when an audio-only accept filter is present.
