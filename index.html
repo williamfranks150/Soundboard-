@@ -119,7 +119,63 @@ header h1{font-family:ui-rounded,"Arial Rounded MT Bold","Trebuchet MS",system-u
 <script>
 'use strict';
 const $=id=>document.getElementById(id),colors=['#e6b96d','#eaa18c','#9ccda9','#a4c4e5','#c7a6d8','#e8cb83','#8dc9bd','#df9baf','#b2c98c','#c4b4e6','#e5b48f','#a5cbd1'];
-const builtinSounds=[{id:'builtin-jeopardy',name:'Jeopardy',url:'audio/jeopardy-think-music.mp3'}];
+const builtinSounds=[
+ {
+  "id": "builtin-jeopardy",
+  "name": "Jeopardy",
+  "url": "audio/jeopardy-think-music.mp3"
+ },
+ {
+  "id": "builtin-lw-dun-dun",
+  "name": "L&W Dun Dun",
+  "url": "audio/lw-dun-dun.mp3"
+ },
+ {
+  "id": "builtin-jackass-theme",
+  "name": "Jackass Theme",
+  "url": "audio/jackass-theme.mp3"
+ },
+ {
+  "id": "builtin-ready-to-rumble",
+  "name": "Ready to Rumble",
+  "url": "audio/ready-to-rumble.mp3"
+ },
+ {
+  "id": "builtin-benny-hill",
+  "name": "Benny Hill",
+  "url": "audio/benny-hill.mp3"
+ },
+ {
+  "id": "builtin-airhorn",
+  "name": "Airhorn",
+  "url": "audio/airhorn.mp3"
+ },
+ {
+  "id": "builtin-thx",
+  "name": "THX",
+  "url": "audio/thx.mp3"
+ },
+ {
+  "id": "builtin-bruh",
+  "name": "Bruh",
+  "url": "audio/bruh.mp3"
+ },
+ {
+  "id": "builtin-cantina-band",
+  "name": "Cantina Band",
+  "url": "audio/cantina-band.mp3"
+ },
+ {
+  "id": "builtin-its-a-trap",
+  "name": "It's a Trap!",
+  "url": "audio/its-a-trap.mp3"
+ },
+ {
+  "id": "builtin-godzilla",
+  "name": "Godzilla",
+  "url": "audio/godzilla.mp3"
+ }
+];
 let slots=Array.from({length:9},(_,i)=>({id:i,name:i===0?'Jeopardy':'Empty',soundId:i===0?'builtin-jeopardy':null})),sounds=[...builtinSounds],active=0,tab='mine',recorder=null,chunks=[],recordStream=null,recordBlob=null,previewURL=null,playing=null,db;
 let request; try { request=indexedDB.open('rubber-soundboard-v1',1); } catch(e) { console.warn('Storage unavailable',e); }
 if(request) request.onupgradeneeded=()=>{const d=request.result;if(!d.objectStoreNames.contains('sounds'))d.createObjectStore('sounds',{keyPath:'id'});if(!d.objectStoreNames.contains('meta'))d.createObjectStore('meta')};
