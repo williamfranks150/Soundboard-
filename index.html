@@ -104,6 +104,15 @@ header h1{font-family:ui-rounded,"Arial Rounded MT Bold","Trebuchet MS",system-u
   transition:none!important;
 }
 .rubber:not(.finger-down){transition:transform 85ms ease-out,box-shadow 85ms ease-out!important}
+
+/* The rim glows only while this button's audio is playing. */
+.well::after{
+ content:"";position:absolute;inset:1px;border-radius:50%;
+ pointer-events:none;opacity:0;transition:opacity 120ms ease;
+ border:2px solid var(--glow,#e6b96d);
+ box-shadow:0 0 5px 2px var(--glow,#e6b96d),0 0 15px 4px var(--glow,#e6b96d);
+}
+.well:has(.rubber[aria-pressed="true"])::after{opacity:1}
 </style></head><body><header><h1>Soundboard</h1><button class="gear" id="settings" aria-label="Settings">⚙</button></header><main><div class="board" id="board"><div class="cell"><div class="well"><button class="rubber" style="--c:#e6b96d" aria-label="Jeopardy; tap to play"></button></div><div class="name">Jeopardy</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#eaa18c" aria-label="Empty button 2"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#9ccda9" aria-label="Empty button 3"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#a4c4e5" aria-label="Empty button 4"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#c7a6d8" aria-label="Empty button 5"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#e8cb83" aria-label="Empty button 6"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#8dc9bd" aria-label="Empty button 7"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#df9baf" aria-label="Empty button 8"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#b2c98c" aria-label="Empty button 9"></button></div><div class="name">Empty</div></div></div><p class="hint">Tap to play · Hold to change · Tap an empty button to add a sound</p></main>
 <dialog id="editor"><div class="dialoghead"><h2 id="editTitle">Choose sound</h2><button class="close" id="closeEditor" aria-label="Close">×</button></div><div class="tabs" role="tablist"><button class="tab" data-tab="music" style="background:#f5d98d">Music</button><button class="tab" data-tab="quotes" style="background:#f5bfa8">Quotes</button><button class="tab" data-tab="effects" style="background:#bde0c6">Effects</button><button class="tab" data-tab="mine" style="background:#b8d5ee">My Sounds</button></div><div class="panel" id="panel"><div id="minePanel" class="stack"><label>Button label<input class="input" id="label" maxlength="45" placeholder="Name your sound"></label><div class="actions"><button class="primary" id="record">● Record</button><button class="secondary" id="import">Import audio</button><input type="file" id="file" hidden></div><p class="small">Import an audio file from Files, including MP3, M4A and WAV.</p><p class="status" id="recordStatus" aria-live="polite"></p><audio id="preview" controls class="hidden" style="width:100%"></audio><div class="actions"><button class="secondary" id="playPreview">▶ Preview</button><button class="primary" id="save">Use This Sound</button></div><button class="danger" id="clear">Clear button</button><div class="small">Your recordings and imports are stored locally on this device for offline playback.</div><strong>Saved sounds</strong><div id="library"></div></div><div id="otherPanel" class="hidden stack"><p>Online sound catalogues are not included in this standalone offline version. Record or import audio under My Sounds.</p><button class="secondary" id="goMine">Go to My Sounds</button></div></div></dialog>
 <dialog id="settingsDialog"><div class="dialoghead"><h2>Settings</h2><button class="close" id="closeSettings">×</button></div><div style="padding:20px"><p>9 rubber buttons in a fixed 3 × 3 grid.</p><p>Audio is stored on this device, not uploaded. Your browser may delete local storage if website data is cleared.</p><p><strong>Microphone:</strong> Recording requires HTTPS or localhost in Safari/Chrome. Opening this file directly may prevent microphone access.</p><p>Made with plain HTML, CSS and JavaScript. No libraries, accounts or fees.</p></div></dialog>
@@ -142,52 +151,54 @@ function render(){
  const board=$('board');board.replaceChildren();
  slots.forEach((slot,i)=>{
   const cell=document.createElement('div');cell.className='cell';
-  const well=document.createElement('div');well.className='well';
+  const well=document.createElement('div');well.className='well';well.style.setProperty('--glow',colors[i]);
   const button=document.createElement('button');button.className='rubber';
   button.style.setProperty('--c',colors[i]);
   button.setAttribute('aria-label',slot.name+'; hold to edit');
   // Touch contact controls the physical state directly.
   // No click-dependent animation and no competing timers.
-  let downAt=0, held=false, fired=false, holdTimer=null;
-  const press=()=>{
-    if(downAt)return;
-    downAt=performance.now();held=false;fired=false;
-    button.classList.add('finger-down');
-    clearTimeout(holdTimer);
-    holdTimer=setTimeout(()=>{held=true},550);
-  };
-  const release=()=>{
-    if(!downAt)return;
-    const elapsed=performance.now()-downAt;
-    const long=held||elapsed>=550;
-    downAt=0;clearTimeout(holdTimer);
-    button.classList.remove('finger-down');
-    if(fired)return;
-    fired=true;
-    if(long||!slot.soundId)setTimeout(()=>openEditor(i),120);
-    else playSound(slot.soundId);
-  };
-  const cancel=()=>{
-    downAt=0;clearTimeout(holdTimer);
-    button.classList.remove('finger-down');
-  };
-  // iOS touch events, not synthetic click, determine visual state.
-  button.addEventListener('touchstart',press,{passive:true});
-  button.addEventListener('touchend',release,{passive:true});
-  button.addEventListener('touchcancel',cancel,{passive:true});
-  // Desktop mouse / stylus fallback.
-  button.addEventListener('mousedown',e=>{if(e.button===0)press()});
-  button.addEventListener('mouseup',release);
-  button.addEventListener('mouseleave',e=>{if(!('ontouchstart' in window))cancel()});
-  button.addEventListener('contextmenu',e=>e.preventDefault());
-  button.addEventListener('click',e=>{
-    if(e.detail===0){press();release()}
-  });
+  attachButtonInput(button,i,slot);
   well.append(button);
   const label=document.createElement('div');label.className='name';label.textContent=slot.name;
   cell.append(well,label);board.append(cell);
  });
  updatePlaybackButtons();
+}
+function attachButtonInput(button,index,slot){
+ let pressedAt=null,suppressClick=false;
+ // Pointer events handle the physical press and hold. Only click plays audio,
+ // so iOS compatibility mouse events cannot toggle playback a second time.
+ button.addEventListener('pointerdown',event=>{
+  if(!event.isPrimary||event.button!==0)return;
+  pressedAt=performance.now();
+  suppressClick=false;
+  button.classList.add('finger-down');
+  button.setPointerCapture(event.pointerId);
+ });
+ button.addEventListener('pointerup',event=>{
+  if(pressedAt===null)return;
+  const longPress=performance.now()-pressedAt>=550;
+  pressedAt=null;
+  button.classList.remove('finger-down');
+  const rect=button.getBoundingClientRect();
+  const inside=event.clientX>=rect.left&&event.clientX<=rect.right&&event.clientY>=rect.top&&event.clientY<=rect.bottom;
+  if(!inside){suppressClick=true;return}
+  if(longPress){
+   suppressClick=true;
+   setTimeout(()=>openEditor(index),120);
+  }
+ });
+ button.addEventListener('pointercancel',()=>{
+  pressedAt=null;
+  suppressClick=true;
+  button.classList.remove('finger-down');
+ });
+ button.addEventListener('contextmenu',event=>event.preventDefault());
+ button.addEventListener('click',()=>{
+  if(suppressClick){suppressClick=false;return}
+  if(!slot.soundId)openEditor(index);
+  else playSound(slot.soundId);
+ });
 }
 function updatePlaybackButtons(){
  document.querySelectorAll('#board .rubber').forEach((button,i)=>{
@@ -218,6 +229,7 @@ async function playSound(id){
  audio.soundId=id;
  playing=audio;
  audio.onplaying=()=>{if(playing===audio)updatePlaybackButtons()};
+ audio.onpause=()=>{if(playing===audio)updatePlaybackButtons()};
  audio.onended=()=>{if(playing===audio)stopPlayback()};
  try{await audio.play()}
  catch(e){
