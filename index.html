@@ -169,7 +169,37 @@ function render(){
   cell.append(well,label);board.append(cell);
  });
 }
-async function playSound(id){const sound=sounds.find(s=>s.id===id);if(!sound)return;if(playing){playing.pause();URL.revokeObjectURL(playing.src);playing=null}const url=URL.createObjectURL(sound.blob);const audio=new Audio(url);playing=audio;audio.onended=()=>{URL.revokeObjectURL(url);if(playing===audio)playing=null};try{await audio.play()}catch(e){URL.revokeObjectURL(url);alert('Playback failed: '+e.message)}}
+function stopPlayback(){
+ if(!playing)return;
+ const audio=playing;
+ playing=null;
+ audio.onended=null;
+ audio.pause();
+ audio.currentTime=0;
+ const url=audio.src;
+ audio.removeAttribute('src');
+ audio.load();
+ URL.revokeObjectURL(url);
+}
+async function playSound(id){
+ const sound=sounds.find(s=>s.id===id);
+ if(!sound)return;
+ const stopOnly=playing?.soundId===id;
+ stopPlayback();
+ if(stopOnly)return;
+ const url=URL.createObjectURL(sound.blob);
+ const audio=new Audio(url);
+ audio.soundId=id;
+ playing=audio;
+ audio.onended=()=>{if(playing===audio)stopPlayback()};
+ try{await audio.play()}
+ catch(e){
+  // Stopping or switching sounds can reject a still-pending play request.
+  if(playing!==audio)return;
+  stopPlayback();
+  alert('Playback failed: '+e.message);
+ }
+}
 function setTab(t){tab=t;const shades={music:'#f5d98d',quotes:'#f5bfa8',effects:'#bde0c6',mine:'#b8d5ee'};$('panel').style.setProperty('--panel',shades[t]);document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===t)));$('minePanel').classList.toggle('hidden',t!=='mine');$('otherPanel').classList.toggle('hidden',t==='mine')}
 function openEditor(i){active=i;recordBlob=null;resetPreview();$('label').value=slots[i].name==='Empty'?'':slots[i].name;$('editTitle').textContent='Button '+(i+1);$('recordStatus').textContent='';$('record').textContent='● Record';setTab('mine');renderLibrary();$('editor').showModal()}
 function resetPreview(){if(previewURL)URL.revokeObjectURL(previewURL);previewURL=null;$('preview').pause();$('preview').removeAttribute('src');$('preview').classList.add('hidden')}
