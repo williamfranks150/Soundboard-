@@ -955,7 +955,9 @@ async function searchCommons(q,target){
    bird:['birdsong','chirping'],frog:['frog croak','croaking'],
    horse:['horse neigh','neighing'],cow:['cow moo','mooing'],
    applause:['clapping','audience applause'],laugh:['laughter','laughing'],
-   cricket:['crickets','chirping'],crickets:['cricket','insects']
+   cricket:['crickets','chirping'],crickets:['cricket','insects'],
+   elephant:['elephant trumpeting','elephant sound'],
+   monkey:['monkey call','monkey chatter'],wolf:['wolf howl','howling wolf']
   };
   const alternatives=[q,...(soundAliases[q]||[])];
   const queries=[...new Set(alternatives)].slice(0,3);
@@ -989,6 +991,13 @@ async function searchCommons(q,target){
   const score=p=>{
    const name=normalize(p.title);
    const rawTitle=p.title.replace(/^File:/i,'').replace(/\.[^.]+$/,'');
+   // Commons contains large collections of spoken dictionary entries named
+   // "En-us-elephant", "En-elephant-garlic", etc. They are not sound effects.
+   const filename=rawTitle.replace(/[_-]+/g,' ').trim();
+   const languagePrefix=/^(?:en(?: (?:us|uk|gb|au|ca))?|fr|de|es|pt|it|ru|ja|zh|hi|ar|nl|ko|pl|sv|fi|da|no|tr|vi|id|bn|ta|te|pa|kcg)(?:\s|$)/i;
+   if(languagePrefix.test(filename)||/^LL[ _-]Q\d+/i.test(rawTitle))return -Infinity;
+   // Permit accented Latin names, but reject non-Latin foreign-language titles.
+   if(/\p{L}/u.test(filename.replace(/\p{Script=Latin}/gu,'')))return -Infinity;
    const unparenthesized=normalize(rawTitle.replace(/\([^)]*\)/g,' '));
    // An English search term appearing only as a translation in parentheses
    // does not describe the actual recorded sound (e.g. "Kcg za (rain)").
@@ -1005,6 +1014,9 @@ async function searchCommons(q,target){
    // as if it were a recording of the requested sound.
    if(speechIndicators.test(name)&&!quote)return -Infinity;
    if(/\b(occurrence at owl creek bridge|owl creek bridge|ambrose bierce)\b/i.test(name))return -Infinity;
+   // Disambiguate homonymous titles such as "elephant garlic", which are
+   // unrelated to the sounds of the animal named in the query.
+   if(q==='elephant'&&/\b(garlic|plant|flower|grass|ear|seal|foot|stone)\b/i.test(name))return -Infinity;
    if(!isMusicRequest&&musicIndicators.test(name)&&!quote)return -Infinity;
    let value=0;
    if(name===q)value+=500;
@@ -1036,6 +1048,11 @@ async function searchCommons(q,target){
    if(!rawDuration||!Number.isFinite(duration)||duration<=0||duration>20)continue;
    const license=(meta.LicenseShortName?.value||'').replace(/<[^>]+>/g,'');
    if(!/^(CC0(?: |$)|Public domain(?: |$)|Public Domain Mark(?: |$)|PDM(?: |$))/i.test(license)||!info.url||!/^https:\/\/upload\.wikimedia\.org\//.test(info.url)||!/\.(ogg|oga|mp3|wav|flac)(?:\?|$)/i.test(info.url))continue;
+   const description=String(meta.ImageDescription?.value||'')
+    .replace(/<[^>]*>/g,' ').replace(/&[^;]+;/g,' ').toLowerCase();
+   // Reject explicit pronunciation, vocabulary and translation recordings,
+   // even if Commons has given the audio file an English display title.
+   if(/\b(wiktionary|pronunciation|dictionary|language lesson|vocabulary|translation|word recording|spoken word|spoken pronunciation|text.to.speech)\b/i.test(description))continue;
    const name=page.title.replace(/^File:/,'').replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').trim();
    const row=document.createElement('div');row.className='catalog-result';
    const label=document.createElement('div');label.style.cssText='flex:1;min-width:0';
