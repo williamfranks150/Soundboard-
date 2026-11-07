@@ -802,7 +802,7 @@ async function searchCommons(q,target){
   const responses=await Promise.allSettled(queries.map(async term=>{
    const api='https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch='+
     encodeURIComponent(term+' filetype:audio')+
-    '&gsrnamespace=6&gsrlimit=35&gsrsort=relevance&prop=imageinfo&iiprop=url%7Cextmetadata&format=json&origin=*';
+    '&gsrnamespace=6&gsrlimit=35&gsrsort=relevance&prop=imageinfo&iiprop=url%7Cextmetadata%7Cmetadata&format=json&origin=*';
    const response=await fetch(api);
    if(!response.ok)throw Error('Search unavailable');
    return response.json();
@@ -855,6 +855,17 @@ async function searchCommons(q,target){
    .sort((a,b)=>b.rank-a.rank||(a.page.index??999)-(b.page.index??999));
   for(const {page} of ranked){
    const info=page.imageinfo?.[0],meta=info?.extmetadata||{};
+   // Commons includes clip length in the file metadata (seconds). Reject
+   // unknown durations as well as long recordings, rather than risk
+   // surfacing audiobooks or entire performances in a short-sound search.
+   const durationItem=(info?.metadata||[]).find(item=>/^(length|duration)$/i.test(item.name||''));
+   const rawDuration=String(durationItem?.value??'').trim();
+   let duration=Number(rawDuration);
+   if(rawDuration.includes(':')){
+    const parts=rawDuration.split(':').map(Number);
+    duration=parts.every(Number.isFinite)?parts.reduce((total,part)=>total*60+part,0):NaN;
+   }
+   if(!rawDuration||!Number.isFinite(duration)||duration<=0||duration>20)continue;
    const license=(meta.LicenseShortName?.value||'').replace(/<[^>]+>/g,'');
    if(!/^(CC0(?: |$)|Public domain(?: |$)|Public Domain Mark(?: |$)|PDM(?: |$))/i.test(license)||!info.url||!/^https:\/\/upload\.wikimedia\.org\//.test(info.url)||!/\.(ogg|oga|mp3|wav|flac)(?:\?|$)/i.test(info.url))continue;
    const name=page.title.replace(/^File:/,'').replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').trim();
@@ -878,7 +889,7 @@ async function searchCommons(q,target){
    save.onclick=async()=>{save.disabled=true;save.textContent='Downloading…';try{const r=await fetch(info.url);if(!r.ok)throw Error('Download failed');const blob=await r.blob();if(blob.size>30*1024*1024)throw Error('File exceeds 30 MB');const item={id,name,blob,source:'catalog',attribution:{license,url:link.href}};await put('sounds',item);sounds.push(item);renderLibrary();save.textContent='Saved'}catch(e){save.disabled=false;save.textContent='Download';$('catalogStatus').textContent=e.message}};
    row.append(label,play,save);target.append(row);count++;
   }
-  if(!count)target.textContent='No matching licensed sounds found.';
+  if(!count)target.textContent='No matching licensed sounds under 20 seconds found.';
  }catch(e){if(sequence===commonsSearchSequence)target.textContent='Online search unavailable.'}
 }
 function renderCatalog(){
