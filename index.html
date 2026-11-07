@@ -854,6 +854,24 @@ $('browseSounds').onclick=()=>{$('catalogDialog').showModal();$('catalogSearch')
 $('closeCatalog').onclick=()=>{$('catalogDialog').close()};
 $('catalogDialog').addEventListener('close',()=>{if(catalogPreview){catalogPreview.pause();catalogPreview.currentTime=0;catalogPreview=null}document.querySelectorAll('#catalogList button').forEach(b=>{if(b._audio)b.textContent='Play'})});
 $('catalogSearch').oninput=renderCatalog;
+$('catalogSearch').addEventListener('keydown',event=>{
+ if(event.key==='Enter'){
+  event.preventDefault();
+  $('catalogSearch').blur();
+ }
+});
+// Tapping outside the search field dismisses the iOS keyboard without
+// closing Search or discarding the existing results.
+$('catalogDialog').addEventListener('pointerdown',event=>{
+ if(event.target.closest?.('.catalog-search-wrap'))return;
+ if(document.activeElement===$('catalogSearch'))$('catalogSearch').blur();
+});
+$('catalogSearch').addEventListener('blur',()=>{
+ // Let iOS resize the visual viewport before presenting the same results.
+ if($('catalogDialog').open&&$('catalogList').childElementCount){
+  $('catalogDialog').scrollTop=0;
+ }
+});
 async function toggleSoundAssignment(soundId){
  const assigned=slots.some(slot=>String(slot.soundId)===String(soundId));
  const emptyIndex=slots.findIndex(slot=>!slot.soundId);
