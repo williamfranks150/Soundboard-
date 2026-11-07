@@ -689,7 +689,23 @@ async function searchCommons(q,target){
   const response=await fetch(api);if(!response.ok)throw Error('Search unavailable');
   const data=await response.json();if(sequence!==commonsSearchSequence||$('catalogSearch').value.trim().toLowerCase()!==q)return;
   target.replaceChildren();let count=0;
-  const terms=q.split(/\s+/).filter(Boolean);\n  const ranked=Object.values(data.query?.pages||{}).sort((a,b)=>{\n   const score=p=>{const n=p.title.replace(/^File:/,'').replace(/\\.[^.]+$/,'').replace(/[_-]+/g,' ').toLowerCase();const words=n.split(/[^\\p{L}\\p{N}]+/u).filter(Boolean);let v=0;if(n===q)v+=1000;if(n.startsWith(q+' '))v+=500;if(words.includes(q))v+=300;if(n.includes(q))v+=120;for(const term of terms){if(words.includes(term))v+=70;else if(n.includes(term))v+=20}v-=Math.min(n.length,150)/10;return v};return score(b)-score(a)||((a.index??999)-(b.index??999))};\n  for(const page of ranked){
+  const terms=q.split(/\s+/).filter(Boolean);
+  const ranked=Object.values(data.query?.pages||{}).sort((a,b)=>{
+   const score=p=>{
+    const n=p.title.replace(/^File:/,'').replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').toLowerCase();
+    const words=n.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+    let v=0;
+    if(n===q)v+=1000;
+    if(n.startsWith(q+' '))v+=500;
+    if(words.includes(q))v+=300;
+    if(n.includes(q))v+=120;
+    for(const term of terms){if(words.includes(term))v+=70;else if(n.includes(term))v+=20}
+    v-=Math.min(n.length,150)/10;
+    return v;
+   };
+   return score(b)-score(a)||((a.index??999)-(b.index??999));
+  });
+  for(const page of ranked){
    const info=page.imageinfo?.[0],meta=info?.extmetadata||{};
    const license=(meta.LicenseShortName?.value||'').replace(/<[^>]+>/g,'');
    if(!/^(CC0(?: |$)|Public domain(?: |$)|Public Domain Mark(?: |$)|PDM(?: |$))/i.test(license)||!info.url||!/^https:\/\/upload\.wikimedia\.org\//.test(info.url)||!/\.(ogg|oga|mp3|wav|flac)(?:\?|$)/i.test(info.url))continue;
