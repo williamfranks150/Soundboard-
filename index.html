@@ -1447,10 +1447,11 @@ async function toggleSoundAssignment(soundId){
   renderLibrary();
  }catch(error){alert('Unable to update assignment: '+error.message)}
 }
+const soundNameCollator=new Intl.Collator('en',{sensitivity:'base',numeric:true});
 function renderLibrary(){
  const target=$('library');target.replaceChildren();
  $('undoDelete').classList.toggle('hidden',!lastDeletion);
- for(const sound of sounds){
+ for(const sound of [...sounds].sort((a,b)=>soundNameCollator.compare(a.name||'',b.name||''))){
   const wrapper=document.createElement('div');wrapper.className='sound-row';wrapper.dataset.soundId=sound.id;const assigned=slots.some(slot=>String(slot.soundId)===String(sound.id));wrapper.classList.toggle('is-assigned',assigned);
   const row=document.createElement('div');row.className='library-item';
   const name=document.createElement('span');name.className='sound-title';name.textContent=sound.name;
