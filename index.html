@@ -308,6 +308,58 @@ body[data-theme="streamdeck"] .well:has(.rubber[aria-pressed="true"]){background
 body[data-theme="streamdeck"] .well:has(.rubber[aria-pressed="true"])::after{opacity:0!important}
 body[data-theme="streamdeck"] .rubber[aria-pressed="true"]{transform:translateY(1px)!important;background:radial-gradient(ellipse at 50% 65%,color-mix(in srgb,var(--c) 46%,#15223a) 0%,color-mix(in srgb,var(--c) 18%,#101827) 58%,#0b1120 100%)!important;border:2px solid color-mix(in srgb,var(--c) 88%,white)!important;box-shadow:inset 0 0 0 2px #ffffff28,inset 0 0 18px color-mix(in srgb,var(--c) 48%,transparent),0 2px 0 #070c14,0 0 5px var(--c),0 0 12px color-mix(in srgb,var(--c) 52%,transparent)!important}
 body[data-theme="streamdeck"] .rubber[aria-pressed="true"] .deck-symbol{filter:brightness(1.3) drop-shadow(0 0 7px var(--c))!important}
+
+/* Sound Deck wordmark: a decorative, non-interactive glass keycap. */
+header{height:clamp(78px,10dvh,104px)!important;flex-basis:clamp(78px,10dvh,104px)!important;padding:10px max(18px,env(safe-area-inset-right)) 10px max(18px,env(safe-area-inset-left))!important;gap:12px!important}
+header h1{
+ visibility:visible;display:inline-flex;align-items:center;justify-content:center;
+ flex:0 1 auto;min-width:0;max-width:calc(100% - 108px);
+ padding:12px clamp(13px,3.6vw,25px) 14px;
+ border-radius:clamp(16px,4vw,24px);
+ font-family:"Arial Rounded MT Bold",ui-rounded,"Trebuchet MS",system-ui,sans-serif!important;
+ font-size:clamp(25px,7.1vw,43px)!important;
+ font-weight:900!important;letter-spacing:-.085em!important;line-height:1!important;
+ white-space:nowrap;
+ color:#f2f7ff!important;
+ background:linear-gradient(155deg,#3d4b63 0%,#1d2b42 26%,#101a2b 72%,#0c1423 100%);
+ border:1px solid #7389a79c;
+ box-shadow:inset 0 2px 2px #ffffff52,inset 0 -5px 9px #0008,0 5px 0 #080e1b,0 8px 13px #0007,0 0 0 3px #51658035;
+ text-shadow:0 2px 1px #050a15,0 0 12px #7fc6eb35;
+ pointer-events:none;user-select:none;
+}
+header .header-actions{flex:0 0 auto;display:flex;align-items:center;gap:4px}
+header .header-actions .gear{min-width:44px;min-height:44px;touch-action:manipulation}
+body[data-theme="light"] header h1{
+ color:#24354c!important;background:linear-gradient(155deg,#fff 0%,#e6f3fb 65%,#d0e2f0 100%);
+ border-color:#94afc5;box-shadow:inset 0 2px 2px #fff,inset 0 -4px 8px #7e9aaf44,0 4px 0 #a5b9c9,0 7px 12px #33495a38;
+ text-shadow:0 1px 0 #fff;
+}
+/* Fluid layout uses available viewport, not device detection. */
+main{width:100%;max-width:850px;padding-inline:max(18px,env(safe-area-inset-left),env(safe-area-inset-right))!important}
+.board{width:100%;max-width:760px;margin-inline:auto}
+.cell{min-width:0}
+#editor,#settingsDialog,#catalogDialog{max-width:min(92vw,720px)}
+button.close,.dialoghead button.close{min-width:44px;min-height:44px}
+@media (min-width:700px){
+ header{max-width:850px;padding-inline:32px!important}
+ header h1{font-size:clamp(36px,4.3vw,46px)!important;padding:15px 26px 17px}
+ main{padding-inline:32px!important}
+ .board{max-width:min(720px,calc(100dvh - 180px));column-gap:clamp(16px,2.5vw,28px)!important;row-gap:clamp(12px,2vh,24px)!important}
+ .well{width:min(100%,calc((100dvh - 190px)/3 - 34px),220px)!important;max-width:220px}
+ .cell{gap:clamp(10px,1.5vh,18px)!important}
+ .name{font-size:clamp(17px,2vw,21px)!important;min-height:44px!important}
+ body[data-theme="streamdeck"] .deck-symbol{font-size:clamp(45px,5vw,76px)}
+}
+@media (max-width:360px){
+ header h1{font-size:clamp(22px,6.6vw,26px)!important;padding:12px 10px 13px}
+ header{gap:5px!important}
+ header .header-actions{gap:0}
+}
+@media (max-height:600px) and (orientation:landscape){
+ header{height:62px!important;flex-basis:62px!important;padding-block:4px!important}
+ header h1{font-size:clamp(22px,4vw,30px)!important;padding:9px 16px 10px}
+ .well{width:min(100%,calc((100dvh - 90px)/3 - 20px))!important}
+}
 </style></head><body><header><h1>Sound Deck</h1><div id="assignHint" class="hidden" aria-live="polite">Tap a button to assign</div><div class="header-actions"><button class="gear" id="mySounds" aria-label="My Sounds"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M9 18V5l11-2v13M9 9l11-2" fill="none" stroke="currentColor" stroke-width="2"/><ellipse cx="6" cy="18" rx="3" ry="2.5" fill="currentColor"/><ellipse cx="17" cy="16" rx="3" ry="2.5" fill="currentColor"/></svg></button><button class="gear" id="settings" aria-label="Settings">⚙</button></div></header><main><div class="board" id="board"><div class="cell"><div class="well"><button class="rubber" style="--c:#e6b96d" aria-label="Jeopardy; tap to play"></button></div><div class="name">Jeopardy</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#eaa18c" aria-label="Empty button 2"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#9ccda9" aria-label="Empty button 3"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#a4c4e5" aria-label="Empty button 4"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#c7a6d8" aria-label="Empty button 5"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#e8cb83" aria-label="Empty button 6"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#8dc9bd" aria-label="Empty button 7"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#df9baf" aria-label="Empty button 8"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#b2c98c" aria-label="Empty button 9"></button></div><div class="name">Empty</div></div></div></main>
 <dialog id="editor"><div class="dialoghead"><h2 id="editTitle">My Sounds</h2><button class="close" id="closeEditor" aria-label="Close">×</button></div><div class="panel" id="panel"><div id="minePanel" class="stack"><div class="actions"><button class="primary" id="record">● Record</button><button class="secondary" id="import">Import</button><button class="secondary" id="browseSounds">Browse</button><input type="file" id="file" hidden></div><div id="draftNameGroup" class="hidden"><label for="draftName">Sound name</label><input class="input" id="draftName" maxlength="80" autocomplete="off" enterkeyhint="done"></div><p class="status" id="recordStatus" aria-live="polite"></p><audio id="preview" class="hidden"></audio><section id="trimPanel" class="trim-panel hidden" aria-label="Trim sound"><div class="trim-heading"><strong>Trim <span id="trimDuration"></span></strong><button id="resetTrim" type="button">Reset</button></div><div class="trim-field"><label for="trimStart">Start</label><input id="trimStart" aria-label="Trim start" type="range" min="0" step="0.01" value="0"><input id="trimStartTime" aria-label="Start time in seconds" type="number" min="0" step="0.01" inputmode="decimal"></div><div class="trim-field"><label for="trimEnd">End</label><input id="trimEnd" aria-label="Trim end" type="range" min="0" step="0.01"><input id="trimEndTime" aria-label="End time in seconds" type="number" min="0" step="0.01" inputmode="decimal"></div></section><div class="actions"><button class="secondary hidden" id="playPreview">▶ Preview</button><button class="primary" id="save" class="hidden">Use sound</button><button class="secondary hidden" id="assignSound" type="button">Assign</button></div><div id="soundManagement" class="stack"><button type="button" id="removeEditedSound" class="danger hidden">Delete</button></div><div class="library-heading"><h3 class="library-title">Sounds</h3><button id="undoDelete" class="hidden" type="button">Undo delete</button></div><div id="library"></div></div></div></dialog>
 <dialog id="catalogDialog"><div class="dialoghead"><h2>Browse sounds</h2><button class="close" id="closeCatalog" aria-label="Close">×</button></div><div style="padding:16px;display:grid;gap:12px"><input class="input" id="catalogSearch" placeholder="Search sounds" autocomplete="off"><div id="catalogList"></div><p id="catalogStatus" class="status" aria-live="polite"></p></div></dialog><dialog id="deleteDialog" aria-labelledby="deleteTitle"><div class="confirm-body"><h2 id="deleteTitle">Delete sound?</h2><p id="deleteName"></p><div class="actions"><button class="secondary" id="cancelDelete">Cancel</button><button class="delete-confirm" id="confirmDelete">Delete</button></div></div></dialog><dialog id="renameDialog" aria-labelledby="renameTitle"><form id="renameForm"><h2 id="renameTitle">Rename sound</h2><label for="renameInput">Sound name</label><input class="input" id="renameInput" maxlength="80" required autocomplete="off" enterkeyhint="done"><p id="renameError" role="alert"></p><div class="actions"><button class="secondary" id="cancelRename" type="button">Cancel</button><button class="primary" id="saveRename" type="submit">Save</button></div></form></dialog><dialog id="settingsDialog"><div class="dialoghead"><h2>Settings</h2><button class="close" id="closeSettings" aria-label="Close">×</button></div><div style="padding:0 18px 18px"><details class="settings-help"><summary>Themes</summary><div class="theme-choices"><label><input type="radio" name="appTheme" value="dark"> Dark</label><label><input type="radio" name="appTheme" value="light"> Light</label><label><input type="radio" name="appTheme" value="streamdeck" checked> Sound Deck</label></div></details><details class="settings-help"><summary>How to use</summary><div class="help-content"><h4>Soundboard</h4><p>Tap a button to play. Tap again to stop. The note icon opens My Sounds.</p><h4>My Sounds</h4><p>Listen, assign, edit or delete.</p><h4>Add sounds</h4><p>Record, import or browse.</p><h4>Assignments</h4><p>Choose a sound, tap Assign, then select a button.</p></div></details><details class="settings-help"><summary>Privacy &amp; storage</summary><div class="help-content"><p>Recordings and downloads stay on this device. Clearing browser data can erase them.</p><p>Use Backup to save a copy. Microphone access is requested only when recording.</p></div></details><details class="settings-help"><summary>Sound licences</summary><div class="help-content"><p>Online sounds are public domain or CC0.</p></div></details><div class="settings-actions"><details class="settings-help"><summary>Backup and recovery</summary><div class="settings-backup-content"><button id="exportBackup" class="secondary">Backup recorded data</button><button id="importBackup" class="secondary">Restore backup</button><input type="file" id="backupFile" accept=".json,application/json" hidden></div></details><details class="settings-help"><summary>Reset</summary><div style="display:grid;gap:12px;padding:4px 0 16px"><label><input type="checkbox" id="resetClear"> Button assignments</label><label><input type="checkbox" id="resetImports"> Imported sounds</label><label><input type="checkbox" id="resetRecordings"> Recorded sounds</label><label><input type="checkbox" id="resetFactory"> Restore to factory settings</label><button id="resetSelected" class="danger">Reset selected</button></div></details></div></div></dialog>
