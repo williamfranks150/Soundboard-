@@ -1007,6 +1007,14 @@ function soundSearchDuration(info){
  if(hour||minute||second)return (hour?+hour[1]*3600:0)+(minute?+minute[1]*60:0)+(second?+second[1]:0);
  return null;
 }
+function formatSoundDuration(seconds){
+ if(!Number.isFinite(seconds)||seconds<0)return '—';
+ const total=Math.round(seconds);
+ const hours=Math.floor(total/3600);
+ const minutes=Math.floor(total%3600/60);
+ const secs=String(total%60).padStart(2,'0');
+ return hours?hours+':'+String(minutes).padStart(2,'0')+':'+secs:minutes+':'+secs;
+}
 async function searchCommons(q,target){
  const sequence=++commonsSearchSequence;
  if(!q){target.replaceChildren();return}
@@ -1050,7 +1058,7 @@ async function searchCommons(q,target){
    const row=document.createElement('div');row.className='catalog-result';
    const label=document.createElement('div');label.style.cssText='flex:1;min-width:0';
    const title=document.createElement('strong');title.textContent=name;
-   const credit=document.createElement('div');credit.style.cssText='font-size:12px;opacity:.75';credit.textContent=license;
+   const credit=document.createElement('div');credit.style.cssText='font-size:12px;opacity:.75';credit.textContent=license+' · '+formatSoundDuration(duration);
    const link=document.createElement('a');link.href='https://commons.wikimedia.org/wiki/'+encodeURIComponent(page.title.replaceAll(' ','_'));link.target='_blank';link.rel='noopener noreferrer';link.textContent='Licence';link.style.fontSize='12px';
    label.append(title,credit,link);
    const play=document.createElement('button');play.className='secondary';play.textContent='Play';play.onclick=async()=>{
@@ -1058,6 +1066,11 @@ async function searchCommons(q,target){
  if(catalogPreview){catalogPreview.pause();catalogPreview.currentTime=0}
  document.querySelectorAll('#catalogList .catalog-result button').forEach(b=>{if(b._audio)b.textContent='Play'});
  const audio=new Audio(info.url);catalogPreview=audio;play._audio=audio;play.textContent='Stop';
+ audio.addEventListener('loadedmetadata',()=>{
+  if(Number.isFinite(audio.duration)&&audio.duration>=0){
+   credit.textContent=license+' · '+formatSoundDuration(audio.duration);
+  }
+ });
  audio.onended=()=>{play.textContent='Play';if(catalogPreview===audio)catalogPreview=null};
  audio.onerror=()=>{play.textContent='Play';if(catalogPreview===audio)catalogPreview=null};
  try{await audio.play()}catch(e){play.textContent='Play';if(catalogPreview===audio)catalogPreview=null;$('catalogStatus').textContent='Unable to preview'}
