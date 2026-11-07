@@ -799,6 +799,7 @@ if(request) request.onsuccess=async()=>{
   const orderIndex=new Map(soundOrder.map((id,i)=>[id,i]));
   sounds.sort((a,b)=>(orderIndex.get(a.id)??Infinity)-(orderIndex.get(b.id)??Infinity));
   slots=slots.map(slot=>deletedSounds.includes(slot.soundId)?{id:slot.id,name:'Empty',soundId:null}:{...slot,name:sounds.find(sound=>sound.id===slot.soundId)?.name||slot.name});
+  await consolidateDuplicateSoundNames();
   await installBundledSound();
  }catch(e){console.error(e)}
  render();
@@ -808,6 +809,7 @@ async function installBundledSound(){
  if(await get('meta','bundled-starter-pack-v1'))return;
  let changed=false;
  for(const sound of builtinSounds){
+  if(deletedSounds.includes(sound.id))continue;
   const empty=slots.findIndex(slot=>!slot.soundId);
   if(empty===-1)break;
   if(slots.some(slot=>slot.soundId===sound.id))continue;
@@ -1002,16 +1004,108 @@ function openRename(id){
  renameTarget=id;$('renameInput').value=sound.name;$('renameError').textContent='';
  $('renameDialog').showModal();$('renameInput').focus();$('renameInput').select();
 }
-function persistSoundChange(item,nextSlots,nextNames){
- return new Promise((resolve,reject)=>{
-  if(!db){reject(Error('Storage unavailable.'));return}
+// A sound name is a unique library key. Case, Unicode normalization, and
+// accidental repeated spaces must not create extra saved entries.
+function uniqueSoundNameKey(name){
+ return String(name||'').normalize('NFKC').trim().replace(/\s+/g,' ').toLocaleLowerCase('en');
+}
+function planNamedSoundSave(source,assignIndex=null){
+ const name=String(source.name||'').trim().replace(/\s+/g,' ');
+ if(!name)throw Error('Enter a sound name.');
+ const key=uniqueSoundNameKey(name);
+ const existingId=sounds.find(sound=>String(sound.id)===String(source.id));
+ const sameName=sounds.filter(sound=>uniqueSoundNameKey(sound.name)===key);
+ // A deliberately edited sound keeps its identity. A new recording/import
+ // takes over the existing name's ID so button assignments stay connected.
+ const id=existingId?existingId.id:(sameName[0]?.id??source.id);
+ const item={...source,id,name};
+ const retired=new Set(sameName.filter(sound=>String(sound.id)!==String(id)).map(sound=>String(sound.id)));
+ const nextSlots=slots.map(slot=>
+  slot.soundId!=null&&(String(slot.soundId)===String(id)||retired.has(String(slot.soundId)))
+   ?{...slot,soundId:id,name}:slot
+ );
+ if(assignIndex!==null&&assignIndex>=0&&assignIndex<nextSlots.length)
+  nextSlots[assignIndex]={...nextSlots[assignIndex],soundId:id,name};
+ const nextNames={...soundNames,[id]:name};
+ for(const deadId of retired)delete nextNames[deadId];
+ const nextDeleted=[...new Set([...deletedSounds.filter(x=>String(x)!==String(id)),
+  ...[...retired].filter(x=>x.startsWith('builtin-'))])];
+ return {item,id,retired,nextSlots,nextNames,nextDeleted};
+}
+async function saveNamedSound(source,assignIndex=null){
+ if(!db)throw Error('Storage unavailable.');
+ const plan=planNamedSoundSave(source,assignIndex);
+ const {item,id,retired,nextSlots,nextNames,nextDeleted}=plan;
+ // One atomic transaction: new audio, duplicate removal, names and assignments.
+ await new Promise((resolve,reject)=>{
   const tx=db.transaction(['sounds','meta'],'readwrite');
-  if(item?.blob)tx.objectStore('sounds').put(item);
-  tx.objectStore('meta').put(nextSlots,'slots');tx.objectStore('meta').put(nextNames,'sound-names');
-  tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||Error('Unable to save.'));
+  if(item.blob||item.url)tx.objectStore('sounds').put(item);
+  for(const retiredId of retired)tx.objectStore('sounds').delete(retiredId);
+  const meta=tx.objectStore('meta');
+  meta.put(nextSlots,'slots');
+  meta.put(nextNames,'sound-names');
+  meta.put(nextDeleted,'deleted-sounds');
+  tx.oncomplete=resolve;
+  tx.onerror=()=>reject(tx.error||Error('Unable to save.'));
   tx.onabort=()=>reject(tx.error||Error('Save cancelled.'));
  });
+ if(playing&&(String(playing.soundId)===String(id)||retired.has(String(playing.soundId))))stopPlayback();
+ sounds=sounds.filter(sound=>String(sound.id)!==String(id)&&!retired.has(String(sound.id)));
+ sounds.push(item);
+ slots=nextSlots;soundNames=nextNames;deletedSounds=nextDeleted;
+ return item;
 }
+// One-time reconciliation of previously saved duplicates. Prefer the sound
+// actually assigned on the soundboard, otherwise the newest personal entry.
+async function consolidateDuplicateSoundNames(){
+ const groups=new Map();
+ for(const sound of sounds){
+  const key=uniqueSoundNameKey(sound.name);
+  if(!key)continue;
+  if(!groups.has(key))groups.set(key,[]);
+  groups.get(key).push(sound);
+ }
+ const duplicates=[...groups.values()].filter(group=>group.length>1);
+ if(!duplicates.length)return false;
+ const retiring=new Set(),redirect=new Map();
+ const nextNames={...soundNames},nextDeleted=new Set(deletedSounds);
+ for(const group of duplicates){
+  const priority=(sound)=>{
+   const assignments=slots.filter(slot=>String(slot.soundId)===String(sound.id)).length;
+   return assignments*100+(String(sound.id).startsWith('builtin-')?0:10);
+  };
+  // For ties, keep the last imported record.
+  const keeper=[...group].sort((a,b)=>priority(b)-priority(a)||sounds.indexOf(b)-sounds.indexOf(a))[0];
+  for(const sound of group){
+   if(String(sound.id)===String(keeper.id))continue;
+   retiring.add(String(sound.id));
+   redirect.set(String(sound.id),keeper);
+   delete nextNames[sound.id];
+   if(String(sound.id).startsWith('builtin-'))nextDeleted.add(sound.id);
+  }
+  nextNames[keeper.id]=keeper.name;
+ }
+ const nextSlots=slots.map(slot=>{
+  const keeper=redirect.get(String(slot.soundId));
+  return keeper?{...slot,soundId:keeper.id,name:keeper.name}:slot;
+ });
+ await new Promise((resolve,reject)=>{
+  const tx=db.transaction(['sounds','meta'],'readwrite');
+  const stored=tx.objectStore('sounds');
+  for(const id of retiring)stored.delete(id);
+  const meta=tx.objectStore('meta');
+  meta.put(nextSlots,'slots');
+  meta.put(nextNames,'sound-names');
+  meta.put([...nextDeleted],'deleted-sounds');
+  tx.oncomplete=resolve;
+  tx.onerror=()=>reject(tx.error||Error('Duplicate cleanup failed.'));
+  tx.onabort=()=>reject(tx.error||Error('Duplicate cleanup cancelled.'));
+ });
+ sounds=sounds.filter(sound=>!retiring.has(String(sound.id)));
+ slots=nextSlots;soundNames=nextNames;deletedSounds=[...nextDeleted];
+ return true;
+}
+
 $('draftName').oninput=()=>{recordName=$('draftName').value};
 $('draftName').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();e.target.blur()}};
 $('cancelRename').onclick=()=>{if(!$('saveRename').disabled)$('renameDialog').close()};
@@ -1023,11 +1117,8 @@ $('renameForm').onsubmit=async e=>{
  const sound=sounds.find(s=>s.id===renameTarget);if(!sound)return;
  $('saveRename').disabled=true;$('cancelRename').disabled=true;
  try{
-  const item={...sound,name},nextNames={...soundNames,[sound.id]:name};
-  const nextSlots=slots.map(slot=>slot.soundId===sound.id?{...slot,name}:slot);
-  await persistSoundChange(item,nextSlots,nextNames);
-  soundNames=nextNames;slots=nextSlots;sounds=sounds.map(s=>s.id===sound.id?item:s);
-  if(editedSoundId===sound.id){recordName=name;$('draftName').value=name}
+  const saved=await saveNamedSound({...sound,name});
+  if(editedSoundId===sound.id){editedSoundId=saved.id;recordName=name;$('draftName').value=name}
   render();renderLibrary();$('renameDialog').close();
  }catch(error){$('renameError').textContent='Unable to save: '+error.message}
  finally{$('saveRename').disabled=false;$('cancelRename').disabled=false}
@@ -1380,7 +1471,7 @@ async function searchCommons(q,target){
 };
    const save=document.createElement('button');save.className='secondary';save.textContent='Download';
    const id='commons-'+page.pageid;save.disabled=sounds.some(x=>x.id===id);if(save.disabled)save.textContent='Saved';
-   save.onclick=async()=>{save.disabled=true;save.textContent='Downloading…';try{const r=await fetch(info.url);if(!r.ok)throw Error('Download failed');const blob=await r.blob();if(blob.size>30*1024*1024)throw Error('File exceeds 30 MB');const item={id,name,blob,source:'catalog',attribution:{license,url:sourceURL}};await put('sounds',item);sounds.push(item);renderLibrary();save.textContent='Saved'}catch(e){save.disabled=false;save.textContent='Download';$('catalogStatus').textContent=e.message}};
+   save.onclick=async()=>{save.disabled=true;save.textContent='Downloading…';try{const r=await fetch(info.url);if(!r.ok)throw Error('Download failed');const blob=await r.blob();if(blob.size>30*1024*1024)throw Error('File exceeds 30 MB');const item={id,name,blob,source:'catalog',attribution:{license,url:sourceURL}};await saveNamedSound(item);render();renderLibrary();save.textContent='Saved'}catch(e){save.disabled=false;save.textContent='Download';$('catalogStatus').textContent=e.message}};
    row.append(label,play,save);target.append(row);count++;
    if(count>=35)break;
   }
@@ -1548,7 +1639,7 @@ $('undoDelete').onclick=async()=>{
   const nextSounds=[...sounds];nextSounds.splice(Math.min(undo.index,sounds.length),0,sound);
   const nextOrder=nextSounds.map(s=>s.id);
   await persistLibraryState(nextSlots,nextDeleted,null,nextOrder);
-  soundOrder=nextOrder;sounds=nextSounds;deletedSounds=nextDeleted;slots=nextSlots;lastDeletion=null;render();renderLibrary();
+  soundOrder=nextOrder;sounds=nextSounds;deletedSounds=nextDeleted;slots=nextSlots;lastDeletion=null;await consolidateDuplicateSoundNames();render();renderLibrary();
  }catch(e){$('recordStatus').textContent='Unable to restore: '+e.message}
  finally{libraryBusy=false}
 };
@@ -1591,28 +1682,20 @@ $('playPreview').onclick=async()=>{
 
 $('save').onclick=async()=>{
  if(trimLoading||$('save').disabled)return;
- const name=(recordName||'').trim()||sounds.find(s=>s.id===slots[active].soundId)?.name||'My Sound';
- if(recordBlob&&!$('draftName').value.trim()){$('recordStatus').textContent='Enter a name.';$('draftName').focus();return}
+ const name=(recordName||'').trim();
+ if(!name){$('recordStatus').textContent='Enter a name.';$('draftName').focus();return}
+ if(!recordBlob){$('recordStatus').textContent='No sound selected.';return}
  $('save').disabled=true;
  try{
-  let id=slots[active].soundId,item=null;
-  if(recordBlob){
-   id=editedSoundId||(crypto.randomUUID?.()||String(Date.now())+'-'+Math.random().toString(36).slice(2));
-   item={id,name,blob:selectedDraftBlob(),source:recordSource||(sounds.find(x=>x.id===id)?.source)||'legacy'};
-  }
-  if(!id){$('recordStatus').textContent='No sound selected.';return}
-  const nextSlots=slots.map(slot=>slot.soundId===id?{...slot,name}:slot);
-  if(!editedSoundId&&!libraryMode)nextSlots[active]={id:active,name,soundId:id};
-  const nextNames={...soundNames,[id]:name};
-  await persistSoundChange(item,nextSlots,nextNames);
-  if(item){const existing=sounds.findIndex(s=>s.id===id);if(existing<0)sounds.push(item);else sounds[existing]=item}
-  slots=nextSlots;soundNames=nextNames;
-  if(playing?.soundId===id)stopPlayback();
-  recordBlob=null;recordSource=null;recordName='';resetPreview();render();renderLibrary();$('recordStatus').textContent='';
+  const id=editedSoundId||(crypto.randomUUID?.()||String(Date.now())+'-'+Math.random().toString(36).slice(2));
+  const item={id,name,blob:selectedDraftBlob(),source:recordSource||(sounds.find(x=>x.id===id)?.source)||'legacy'};
+  const saved=await saveNamedSound(item,!editedSoundId&&!libraryMode?active:null);
+  if(editedSoundId)editedSoundId=saved.id;
+  recordBlob=null;recordSource=null;recordName='';resetPreview();
+  render();renderLibrary();$('recordStatus').textContent='';
  }catch(e){$('recordStatus').textContent='Unable to save: '+e.message}
  finally{$('save').disabled=false}
 };
-
 
 
 function factorySlots(){return builtinSounds.slice(0,9).map((sound,i)=>({id:i,name:sound.name,soundId:sound.id}))}
@@ -1636,6 +1719,7 @@ $('resetSelected').onclick=async()=>{
   await new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)});
   slots=nextSlots;deletedSounds=nextDeleted;soundNames=nextNames;
   sounds=[...builtinSounds,...await allSounds()].filter(x=>!deletedSounds.includes(x.id)).map(x=>({...x,name:soundNames[x.id]||x.name}));
+  await consolidateDuplicateSoundNames();
   stopPlayback();render();$('settingsDialog').close();
   for(const id of ['resetClear','resetImports','resetRecordings','resetFactory'])$(id).checked=false;
  }catch(e){alert('Reset failed: '+e.message)}
@@ -1643,7 +1727,7 @@ $('resetSelected').onclick=async()=>{
 function blobToBase64(blob){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(blob)})}
 $('exportBackup').onclick=async()=>{try{const personal=await allSounds();const records=[];for(const sound of personal)records.push({id:sound.id,name:sound.name,source:sound.source||'legacy',blob:await blobToBase64(sound.blob)});const data={format:'set-sounds-backup',version:1,created:new Date().toISOString(),records,slots,soundNames,deletedSounds};const url=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='Set-Sounds-Backup.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}catch(e){alert('Backup failed: '+e.message)}};
 $('importBackup').onclick=()=>$('backupFile').click();
-$('backupFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());if(data.format!=='set-sounds-backup'||data.version!==1||!Array.isArray(data.records)||!Array.isArray(data.slots))throw Error('Invalid backup file');if(!confirm('Restore this backup? Existing sounds with matching IDs and button assignments will be replaced.'))return;for(const record of data.records){if(typeof record.id!=='string'||typeof record.blob!=='string'||!record.blob.startsWith('data:'))throw Error('Invalid audio record');const blob=await (await fetch(record.blob)).blob();await put('sounds',{id:record.id,name:record.name,source:record.source||'legacy',blob})}slots=data.slots.slice(0,9);soundNames=data.soundNames||{};deletedSounds=data.deletedSounds||[];await put('meta',slots,'slots');await put('meta',soundNames,'sound-names');await put('meta',deletedSounds,'deleted-sounds');sounds=[...builtinSounds,...await allSounds()].filter(x=>!deletedSounds.includes(x.id)).map(x=>({...x,name:soundNames[x.id]||x.name}));stopPlayback();render();$('settingsDialog').close();alert('Backup restored.')}catch(error){alert('Restore failed: '+error.message)}finally{e.target.value=''}};
+$('backupFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());if(data.format!=='set-sounds-backup'||data.version!==1||!Array.isArray(data.records)||!Array.isArray(data.slots))throw Error('Invalid backup file');if(!confirm('Restore this backup? Existing sounds with matching IDs and button assignments will be replaced.'))return;for(const record of data.records){if(typeof record.id!=='string'||typeof record.blob!=='string'||!record.blob.startsWith('data:'))throw Error('Invalid audio record');const blob=await (await fetch(record.blob)).blob();await put('sounds',{id:record.id,name:record.name,source:record.source||'legacy',blob})}slots=data.slots.slice(0,9);soundNames=data.soundNames||{};deletedSounds=data.deletedSounds||[];await put('meta',slots,'slots');await put('meta',soundNames,'sound-names');await put('meta',deletedSounds,'deleted-sounds');sounds=[...builtinSounds,...await allSounds()].filter(x=>!deletedSounds.includes(x.id)).map(x=>({...x,name:soundNames[x.id]||x.name}));await consolidateDuplicateSoundNames();stopPlayback();render();renderLibrary();$('settingsDialog').close();alert('Backup restored.')}catch(error){alert('Restore failed: '+error.message)}finally{e.target.value=''}};
 $('editor').addEventListener('close',()=>{editLoadToken++;if(recorder?.state==='recording')recorder.stop();resetPreview()});$('closeEditor').onclick=()=>$('editor').close();$('mySounds').onclick=()=>openEditor(active,true);$('settings').onclick=()=>$('settingsDialog').showModal();document.querySelectorAll('input[name="appTheme"]').forEach(input=>input.addEventListener('change',()=>{if(input.checked)applyTheme(input.value)}));applyTheme(selectedTheme);$('closeSettings').onclick=()=>$('settingsDialog').close();render();
 function fitButtons(){
  const board=$('board');if(!board)return;
