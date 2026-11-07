@@ -1008,21 +1008,23 @@ body[data-theme="streamdeck"]{
  --line:#53677e;
 }
 body[data-theme="streamdeck"] :is(#editor,#settingsDialog,#catalogDialog){
- --menu-surface:linear-gradient(155deg,#243249,#172233 78%,#101827);
- --menu-heading:linear-gradient(150deg,#344359 0%,#1d2b40 52%,#121e30 100%);
- --menu-body:linear-gradient(145deg,#26364e 0%,#202c40 72%,#18263b 100%);
- --menu-row:linear-gradient(142deg,#ffffff09,#111e2f10 55%,#101c2b19);
- --menu-face:linear-gradient(155deg,#40516b,#263750 54%,#1d293d);
- --menu-edge:#7185a2;
- --menu-input:#111c2d;
- --menu-rule:#536880;
- --menu-check-off:#121f30;
+ /* Identical surface palette to the nine-key soundboard, not a brighter
+    separate blue menu. Transparent subpanels show one continuous backdrop. */
+ --menu-surface:linear-gradient(155deg,#222b3a 0%,#111927 52%,#090e17 100%);
+ --menu-heading:transparent;
+ --menu-body:transparent;
+ --menu-row:transparent;
+ --menu-face:linear-gradient(155deg,#354358 0%,#202d41 53%,#111b2c 100%);
+ --menu-edge:#64758e;
+ --menu-input:#111a28;
+ --menu-rule:#35465b;
+ --menu-check-off:#101825;
  --menu-ink:#f4f8ff;
- --menu-muted:#bfccdc;
+ --menu-muted:#b4c1d2;
  --menu-contrast:#f4f8ff;
- --menu-accent:#65eadc;
- --menu-trim:linear-gradient(145deg,#152237,#1c2b42);
- --menu-frame:#7289a5b0;
+ --menu-accent:#60e6d6;
+ --menu-trim:#142033;
+ --menu-frame:#495b7394;
  --menu-primary:#48d5c6;
  --menu-primary-ink:#08272c;
 }
@@ -1032,7 +1034,7 @@ body[data-theme="streamdeck"] #editor #library .sound-actions :is(.sound-preview
 }
 body[data-theme="streamdeck"] #editor #library .library-item{
  background:var(--menu-row)!important;
- box-shadow:inset 0 1px 0 #ffffff09!important;
+ box-shadow:none!important;
 }
 body[data-theme="streamdeck"] #editor #library .sound-actions .assigned-check.assigned{
  box-shadow:0 0 12px #50e7d58c,inset 0 2px 3px #ffffff8c,0 2px 3px #0b1724!important;
@@ -1043,6 +1045,25 @@ body[data-theme="streamdeck"] #editor #library .sound-actions .assigned-check.as
 body > header h1.app-wordmark{
  max-width:calc(100% - 108px)!important;
  margin-right:auto!important;
+}
+
+/* A seamless Sound Deck page-to-menu transition: keep the same navy-black
+   gradient behind the title, controls, results and settings content. */
+body[data-theme="streamdeck"] #editor .dialoghead,
+body[data-theme="streamdeck"] #editor .panel,
+body[data-theme="streamdeck"] #settingsDialog .dialoghead,
+body[data-theme="streamdeck"] #catalogDialog .dialoghead{
+ background:transparent!important;
+}
+body[data-theme="streamdeck"] #editor #minePanel,
+body[data-theme="streamdeck"] #editor #library,
+body[data-theme="streamdeck"] #settingsDialog > div:not(.dialoghead),
+body[data-theme="streamdeck"] #catalogDialog .catalog-body{
+ background:transparent!important;
+}
+body[data-theme="streamdeck"] :is(#editor,#settingsDialog,#catalogDialog){
+ border:1px solid #46566c55!important;
+ box-shadow:0 22px 58px #0009!important;
 }
 </style></head><body><header><h1 class="app-wordmark">Sound Deck</h1><div id="assignHint" class="hidden" aria-live="polite">Tap a button to assign</div><div class="header-actions"><button class="gear" id="mySounds" aria-label="My Sounds"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M9 18V5l11-2v13M9 9l11-2" fill="none" stroke="currentColor" stroke-width="2"/><ellipse cx="6" cy="18" rx="3" ry="2.5" fill="currentColor"/><ellipse cx="17" cy="16" rx="3" ry="2.5" fill="currentColor"/></svg></button><button class="gear" id="settings" aria-label="Settings">⚙</button></div></header><main><div class="board" id="board"><div class="cell"><div class="well"><button class="rubber" style="--c:#e6b96d" aria-label="Jeopardy; tap to play"></button></div><div class="name">Jeopardy</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#eaa18c" aria-label="Empty button 2"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#9ccda9" aria-label="Empty button 3"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#a4c4e5" aria-label="Empty button 4"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#c7a6d8" aria-label="Empty button 5"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#e8cb83" aria-label="Empty button 6"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#8dc9bd" aria-label="Empty button 7"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#df9baf" aria-label="Empty button 8"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#b2c98c" aria-label="Empty button 9"></button></div><div class="name">Empty</div></div></div></main>
 <dialog id="editor"><div class="dialoghead"><h2 id="editTitle" class="app-wordmark">My Sounds</h2><button class="close" id="closeEditor" aria-label="Close"><svg class="close-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5.5 5.5 18.5 18.5M18.5 5.5 5.5 18.5"/></svg></button></div><div class="panel" id="panel"><div id="minePanel" class="stack"><div class="actions"><button class="primary" id="record">● Rec</button><button class="secondary" id="import" aria-label="Import audio" title="Import audio"><svg viewBox="0 0 64 64" class="import-folder-icon" aria-hidden="true" focusable="false"><defs><linearGradient id="importFolderBack" x1="0" y1="0" x2="0.65" y2="1"><stop stop-color="#ffffff"/><stop offset="1" stop-color="#aeb5c1"/></linearGradient><linearGradient id="importFolderFront" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#555360"/><stop offset="0.47" stop-color="#24242d"/><stop offset="1" stop-color="#0b0d14"/></linearGradient></defs><path d="M4 14Q4 9 9 9H23L29 14H51Q56 14 56 19V45H4Z" fill="url(#importFolderBack)" stroke="#aeb4bf" stroke-width="1.5"/><path d="M6 20Q6 16 11 16H29L34 20H55Q60 20 60 25V48H6Z" fill="#e2e5ea" stroke="#a2aab8" stroke-width="1.2"/><path d="M4 29Q4 24 10 24H54Q60 24 60 30L57 55Q56 58 51 58H10Q5 58 5 53Z" fill="url(#importFolderFront)" stroke="#888b96" stroke-width="1.5"/><path d="M9 30Q10 27 14 27H51" stroke="#ffffff" stroke-opacity=".45" stroke-width="1.4" stroke-linecap="round"/><path d="M37 31V45.5Q34 44.3 31 46Q27 48.2 29.2 51.6Q31.2 54.4 35 51.8Q38 50 38 47V33L47 30V42Q44 40.8 41 43Q38 45.2 40 48Q42 51 46 48.2Q48 46.8 48 43V25Z" fill="#f4f6fc" stroke="#f4f6fc" stroke-width=".7"/></svg></button><button class="secondary" id="browseSounds" aria-label="Search sounds" title="Search sounds"><svg viewBox="0 0 24 24" width="27" height="27" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.6"/><path d="m16 16 5 5"/></svg></button><input type="file" id="file" accept=".mp3,.mp2,.m4a,.wav,.wave,.aac,.ogg,.oga,.opus,.flac,.aif,.aiff,.caf,.amr" hidden></div><div id="editAreaTop" class="edit-area-top hidden"><button type="button" id="backToSounds" class="edit-area-close hidden" aria-label="Close sound editor and return to sounds" title="Back to sounds"><svg class="close-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5.5 5.5 18.5 18.5M18.5 5.5 5.5 18.5"/></svg></button></div><div id="draftNameGroup" class="hidden"><label for="draftName">Sound name</label><input class="input" id="draftName" maxlength="80" autocomplete="off" enterkeyhint="done"></div><p class="status" id="recordStatus" aria-live="polite"></p><audio id="preview" class="hidden"></audio><section id="trimPanel" class="trim-panel hidden" aria-label="Trim sound"><div class="trim-heading"><strong>Trim <span id="trimDuration"></span></strong><button id="resetTrim" type="button">Reset</button></div><div class="trim-field"><label for="trimStart">Start</label><input id="trimStart" aria-label="Trim start" type="range" min="0" step="0.01" value="0"><input id="trimStartTime" aria-label="Start time in seconds" type="number" min="0" step="0.01" inputmode="decimal"></div><div class="trim-field"><label for="trimEnd">End</label><input id="trimEnd" aria-label="Trim end" type="range" min="0" step="0.01"><input id="trimEndTime" aria-label="End time in seconds" type="number" min="0" step="0.01" inputmode="decimal"></div></section><div class="actions"><button class="secondary hidden" id="playPreview">▶ Preview</button><button class="primary" id="save" class="hidden">Use sound</button></div><div id="soundManagement" class="stack"><button type="button" id="removeEditedSound" class="danger hidden">Delete</button></div><div id="editAreaBottom" class="edit-area-divider hidden" aria-hidden="true"></div><div class="library-heading"><h3 class="library-title">Sounds</h3><button id="undoDelete" class="hidden" type="button">Undo delete</button></div><div id="library"></div></div></div><div id="assignmentToast" class="assignment-toast" role="status" aria-live="polite" aria-atomic="true"></div></dialog>
