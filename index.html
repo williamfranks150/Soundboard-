@@ -785,38 +785,75 @@ async function searchCommons(q,target){
  const sequence=++commonsSearchSequence;
  if(!q){target.textContent='Search the online sound library.';return}
  try{
-  const api='https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch='+encodeURIComponent(q+' filetype:audio')+'&gsrnamespace=6&gsrlimit=50&gsrsort=relevance&prop=imageinfo&iiprop=url%7Cextmetadata&format=json&origin=*';
-  const response=await fetch(api);if(!response.ok)throw Error('Search unavailable');
-  const data=await response.json();if(sequence!==commonsSearchSequence||$('catalogSearch').value.trim().toLowerCase()!==q)return;
+  // Query sound-related alternatives when a sound is commonly named another way.
+  const soundAliases={
+   creek:['stream','brook'],stream:['creek','brook'],brook:['creek','stream'],
+   river:['stream','flowing water'],rain:['rainfall','rain drops'],
+   ocean:['waves','surf'],sea:['waves','surf'],
+   lion:['lion roar','roaring lion'],duck:['duck quack','quacking'],
+   dog:['barking dog','dog bark'],cat:['cat meow','meowing'],
+   bird:['birdsong','chirping'],frog:['frog croak','croaking'],
+   horse:['horse neigh','neighing'],cow:['cow moo','mooing'],
+   applause:['clapping','audience applause'],laugh:['laughter','laughing'],
+   cricket:['crickets','chirping'],crickets:['cricket','insects']
+  };
+  const alternatives=[q,...(soundAliases[q]||[])];
+  const queries=[...new Set(alternatives)].slice(0,3);
+  const responses=await Promise.allSettled(queries.map(async term=>{
+   const api='https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch='+
+    encodeURIComponent(term+' filetype:audio')+
+    '&gsrnamespace=6&gsrlimit=35&gsrsort=relevance&prop=imageinfo&iiprop=url%7Cextmetadata&format=json&origin=*';
+   const response=await fetch(api);
+   if(!response.ok)throw Error('Search unavailable');
+   return response.json();
+  }));
+  if(sequence!==commonsSearchSequence||$('catalogSearch').value.trim().toLowerCase()!==q)return;
+  if(responses.every(result=>result.status==='rejected'))throw Error('Search unavailable');
+  const pages=new Map();
+  responses.forEach(result=>{
+   if(result.status!=='fulfilled')return;
+   for(const page of Object.values(result.value.query?.pages||{})){
+    if(!pages.has(page.pageid))pages.set(page.pageid,page);
+   }
+  });
   target.replaceChildren();let count=0;
   const terms=q.split(/\s+/).filter(Boolean);
-  const ranked=Object.values(data.query?.pages||{}).sort((a,b)=>{
-   const score=p=>{
-    const n=p.title.replace(/^File:/,'').replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').toLowerCase();
-    const words=n.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
-    let v=0;
-    // Rank effects first for generic terms, recognizable quotes for specific phrases, incidental speech last.
-    const effects=/\b(sound effects?|sfx|sounds?|calls?|roars?|roaring|growls?|growling|quacks?|quacking|barks?|barking|meows?|chirps?|chirping|howls?|screams?|snorts?|hisses?|animal|wildlife|field recording|nature|ambien(?:ce|t)|foley|recording)\b/i;
-    const speech=/\b(spoken|speaking|speech|pronunciation|pronouncing|word|words|language|translation|vocabulary|dictionary|reading|narration|voiceover|tts|text to speech|saying|says|said|interview|conversation)\b/i;
-    const music=/\b(song|music|musical|dance|percussion|piano|concert|band|instrumental|anthem|melody|remix|cover|karaoke|hymn)\b/i;
-    const quote=/\b(movie|film|tv|television|quote|quotes|catchphrase|dialogue|dialog|scene|soundbite|sound bite|character|comedy|meme)\b/i.test(n);
-    const specificPhrase=terms.length>=2;
-    if(effects.test(n))v+=280;
-    if(quote)v+=specificPhrase?420:130;
-    if(speech.test(n)&&!quote)v-=550;
-    if(music.test(n))v-=230;
-    if(n===q)v+=specificPhrase?850:100;
-    if(n.startsWith(q+' '))v+=specificPhrase?650:100;
-    if(specificPhrase&&n.includes(q))v+=400;
-    if(words.includes(q))v+=180;
-    if(n.includes(q))v+=90;
-    for(const term of terms){if(words.includes(term))v+=60;else if(n.includes(term))v+=15}
-    v-=Math.min(n.length,150)/10;
-    return v;
-   };
-   return score(b)-score(a)||((a.index??999)-(b.index??999));
-  });
-  for(const page of ranked){
+  const specificPhrase=terms.length>=2;
+  const normalize=value=>value.toLowerCase().replace(/^file:/,'').replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').replace(/[^\p{L}\p{N}]+/gu,' ').replace(/\s+/g,' ').trim();
+  const searched=alternatives.map(normalize);
+  const soundIndicators=/\b(sound effects?|sfx|sounds?|calls?|roars?|roaring|growls?|growling|quacks?|quacking|barks?|barking|meows?|meowing|chirps?|chirping|howls?|screams?|snorts?|hisses?|animal|wildlife|field recording|nature|ambient|ambience|foley|running water|flowing water|babbling|splashing|rainfall)\b/i;
+  const speechIndicators=/\b(spoken|speaking|speech|pronunciation|pronouncing|language|translation|vocabulary|dictionary|reading|narration|voiceover|tts|text to speech|saying|interview|conversation|audiobook|poetry|poem|lecture|avk)\b/i;
+  const musicIndicators=/\b(song|music|musical|dance|percussion|piano|concert|band|instrumental|anthem|melody|remix|cover|karaoke|hymn)\b/i;
+  const quoteIndicators=/\b(movie|film|tv|television|quote|quotes|catchphrase|dialogue|dialog|scene|soundbite|sound bite|character|comedy|meme)\b/i;
+  const isMusicRequest=/\b(song|music|musical|dance|piano|concert|band|instrument|melody|remix|theme|jingle|guitar|drum|beat)\b/i.test(q);
+  const score=p=>{
+   const name=normalize(p.title);
+   const words=name.split(' ').filter(Boolean);
+   const phraseMatches=searched.filter(phrase=>phrase&&(' '+name+' ').includes(' '+phrase+' '));
+   const termMatches=terms.filter(term=>words.includes(term));
+   if(!phraseMatches.length&&termMatches.length!==terms.length)return -Infinity;
+   const quote=quoteIndicators.test(name);
+   // Do not present a reading, foreign-language vocabulary or a film title
+   // as if it were a recording of the requested sound.
+   if(speechIndicators.test(name)&&!quote)return -Infinity;
+   if(/\b(occurrence at owl creek bridge|owl creek bridge|ambrose bierce)\b/i.test(name))return -Infinity;
+   if(!isMusicRequest&&musicIndicators.test(name)&&!quote)return -Infinity;
+   let value=0;
+   if(name===q)value+=500;
+   if(name.startsWith(q+' '))value+=220;
+   if((' '+name+' ').includes(' '+q+' '))value+=220;
+   if(soundIndicators.test(name))value+=340;
+   if(quote&&specificPhrase)value+=360;
+   if(quote&&!specificPhrase)value+=30;
+   for(const phrase of phraseMatches)value+=phrase===q?170:130;
+   for(const term of termMatches)value+=50;
+   value-=Math.min(name.length,160)/8;
+   return value;
+  };
+  const ranked=[...pages.values()].map(page=>({page,rank:score(page)}))
+   .filter(item=>Number.isFinite(item.rank)&&item.rank>0)
+   .sort((a,b)=>b.rank-a.rank||(a.page.index??999)-(b.page.index??999));
+  for(const {page} of ranked){
    const info=page.imageinfo?.[0],meta=info?.extmetadata||{};
    const license=(meta.LicenseShortName?.value||'').replace(/<[^>]+>/g,'');
    if(!/^(CC0(?: |$)|Public domain(?: |$)|Public Domain Mark(?: |$)|PDM(?: |$))/i.test(license)||!info.url||!/^https:\/\/upload\.wikimedia\.org\//.test(info.url)||!/\.(ogg|oga|mp3|wav|flac)(?:\?|$)/i.test(info.url))continue;
@@ -841,7 +878,7 @@ async function searchCommons(q,target){
    save.onclick=async()=>{save.disabled=true;save.textContent='Downloading…';try{const r=await fetch(info.url);if(!r.ok)throw Error('Download failed');const blob=await r.blob();if(blob.size>30*1024*1024)throw Error('File exceeds 30 MB');const item={id,name,blob,source:'catalog',attribution:{license,url:link.href}};await put('sounds',item);sounds.push(item);renderLibrary();save.textContent='Saved'}catch(e){save.disabled=false;save.textContent='Download';$('catalogStatus').textContent=e.message}};
    row.append(label,play,save);target.append(row);count++;
   }
-  if(!count)target.textContent='No licensed audio found.';
+  if(!count)target.textContent='No matching licensed sounds found.';
  }catch(e){if(sequence===commonsSearchSequence)target.textContent='Online search unavailable.'}
 }
 function renderCatalog(){
