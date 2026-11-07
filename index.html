@@ -968,7 +968,10 @@ function soundSearchNormalize(value){
 // Plurals, irregular nouns, and descriptive phrases share the same search.
 function soundSearchSingular(word){
  const irregular={
-  babies:'baby',cries:'cry',flies:'fly',wolves:'wolf',geese:'goose',
+  babies:'baby',cries:'cry',crying:'cry',sobbing:'sob',weeping:'weep',
+  barking:'bark',quacking:'quack',roaring:'roar',chirping:'chirp',
+  screaming:'scream',howling:'howl',laughing:'laugh',meowing:'meow',
+  raining:'rain',flies:'fly',wolves:'wolf',geese:'goose',
   mice:'mouse',children:'child',men:'man',women:'woman',people:'person',
   teeth:'tooth',feet:'foot',leaves:'leaf',knives:'knife',oxen:'ox',
   fish:'fish',deer:'deer',sheep:'sheep',species:'species',news:'news'
@@ -1009,7 +1012,13 @@ function soundSearchRelevance(page,query,aliases){
   ||/\p{L}/u.test(separated.replace(/\p{Script=Latin}/gu,'')))return -Infinity;
  const original=soundSearchNormalize(filename);
  const name=soundSearchTokenize(filename.replace(/\([^)]*\)/g,' ')).join(' ');
- const matches=aliases.filter(term=>(' '+name+' ').includes(' '+term+' '));
+ // Prefer full phrases, but also match reordered words (e.g. "baby crying"
+ // and "crying baby") without accepting unrelated partial matches.
+ const tokenSet=new Set(name.split(' '));
+ const directMatches=aliases.filter(term=>(' '+name+' ').includes(' '+term+' '));
+ const unorderedMatches=aliases.filter(term=>term.includes(' ')&&
+  term.split(' ').every(word=>tokenSet.has(word)));
+ const matches=[...new Set([...directMatches,...unorderedMatches])];
  if(!matches.length)return -Infinity;
  const info=page.imageinfo?.[0];
  const metadata=String(info?.extmetadata?.ImageDescription?.value||'')
@@ -1033,7 +1042,7 @@ function soundSearchRelevance(page,query,aliases){
  if(animalOrNature&&!descriptive&&!simpleTitle&&!quote)return -Infinity;
  // 'Wikipedia Elephant communication' isn't a recording of elephant calls.
  if(/\b(wikipedia|encyclopedia|communication|historical recording|article|presentation|documentary)\b/i.test(name)&&!descriptive)return -Infinity;
- let score=matches.includes(query)?450:250;
+ let score=directMatches.includes(query)?450:matches.includes(query)?370:250;
  if(name===query)score+=300;
  if(name.startsWith(query+' '))score+=130;
  if(descriptive)score+=250;
