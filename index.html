@@ -1266,6 +1266,12 @@ body[data-theme="light"] :is(#editor,#catalogDialog,#settingsDialog) .dialoghead
  stroke:#fff!important;
  stroke-width:2.1!important;
 }
+
+/* User-driven swipes retain momentum; button-driven navigation is always instant. */
+#editor[open]{
+ scroll-behavior:auto!important;
+ scroll-snap-type:none!important;
+}
 </style></head><body><header><h1 class="app-wordmark">Sound Deck</h1><div id="assignHint" class="hidden" aria-live="polite">Tap a button to assign</div><div class="header-actions"><button class="gear" id="mySounds" aria-label="My Sounds"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M9 18V5l11-2v13M9 9l11-2" fill="none" stroke="currentColor" stroke-width="2"/><ellipse cx="6" cy="18" rx="3" ry="2.5" fill="currentColor"/><ellipse cx="17" cy="16" rx="3" ry="2.5" fill="currentColor"/></svg></button><button class="gear" id="settings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10.4 2h3.2l.55 2.35a8 8 0 0 1 1.65.68l2.06-1.27 2.27 2.27-1.27 2.06c.31.52.54 1.07.69 1.65L22 10.3v3.4l-2.45.55a8 8 0 0 1-.69 1.65l1.27 2.06-2.27 2.27-2.06-1.27a8 8 0 0 1-1.65.68L13.6 22h-3.2l-.55-2.35a8 8 0 0 1-1.65-.68l-2.06 1.27-2.27-2.27 1.27-2.06a8 8 0 0 1-.68-1.65L2 13.7v-3.4l2.46-.55a8 8 0 0 1 .68-1.65L3.87 6.04l2.27-2.27L8.2 5.04a8 8 0 0 1 1.65-.68Z"/><circle cx="12" cy="12" r="3.2"/></svg></button></div></header><main><div class="board" id="board"><div class="cell"><div class="well"><button class="rubber" style="--c:#e6b96d" aria-label="Jeopardy; tap to play"></button></div><div class="name">Jeopardy</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#eaa18c" aria-label="Empty button 2"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#9ccda9" aria-label="Empty button 3"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#a4c4e5" aria-label="Empty button 4"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#c7a6d8" aria-label="Empty button 5"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#e8cb83" aria-label="Empty button 6"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#8dc9bd" aria-label="Empty button 7"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#df9baf" aria-label="Empty button 8"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#b2c98c" aria-label="Empty button 9"></button></div><div class="name">Empty</div></div></div></main>
 <dialog id="editor"><div class="dialoghead"><h2 id="editTitle" class="app-wordmark">My Sounds</h2><button class="close" id="closeEditor" aria-label="Close"><svg class="close-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5.5 5.5 18.5 18.5M18.5 5.5 5.5 18.5"/></svg></button></div><div class="panel" id="panel"><div id="minePanel" class="stack"><div class="actions"><button class="primary" id="record">● Rec</button><button class="secondary" id="import" aria-label="Import audio" title="Import audio"><svg viewBox="0 0 64 64" class="import-folder-icon" aria-hidden="true" focusable="false"><defs><linearGradient id="importFolderBack" x1="0" y1="0" x2="0.65" y2="1"><stop stop-color="#ffffff"/><stop offset="1" stop-color="#aeb5c1"/></linearGradient><linearGradient id="importFolderFront" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#555360"/><stop offset="0.47" stop-color="#24242d"/><stop offset="1" stop-color="#0b0d14"/></linearGradient></defs><path d="M4 14Q4 9 9 9H23L29 14H51Q56 14 56 19V45H4Z" fill="url(#importFolderBack)" stroke="#aeb4bf" stroke-width="1.5"/><path d="M6 20Q6 16 11 16H29L34 20H55Q60 20 60 25V48H6Z" fill="#e2e5ea" stroke="#a2aab8" stroke-width="1.2"/><path d="M4 29Q4 24 10 24H54Q60 24 60 30L57 55Q56 58 51 58H10Q5 58 5 53Z" fill="url(#importFolderFront)" stroke="#888b96" stroke-width="1.5"/><path d="M9 30Q10 27 14 27H51" stroke="#ffffff" stroke-opacity=".45" stroke-width="1.4" stroke-linecap="round"/><path d="M37 31V45.5Q34 44.3 31 46Q27 48.2 29.2 51.6Q31.2 54.4 35 51.8Q38 50 38 47V33L47 30V42Q44 40.8 41 43Q38 45.2 40 48Q42 51 46 48.2Q48 46.8 48 43V25Z" fill="#f4f6fc" stroke="#f4f6fc" stroke-width=".7"/></svg></button><button class="secondary" id="browseSounds" aria-label="Search sounds" title="Search sounds"><svg viewBox="0 0 24 24" width="27" height="27" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.6"/><path d="m16 16 5 5"/></svg></button><input type="file" id="file" accept=".mp3,.mp2,.m4a,.wav,.wave,.aac,.ogg,.oga,.opus,.flac,.aif,.aiff,.caf,.amr" hidden></div><div id="editAreaTop" class="edit-area-top hidden"><button type="button" id="backToSounds" class="edit-area-close hidden" aria-label="Close sound editor and return to sounds" title="Back to sounds"><svg class="close-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5.5 5.5 18.5 18.5M18.5 5.5 5.5 18.5"/></svg></button></div><div id="draftNameGroup" class="hidden"><label for="draftName">Sound name</label><input class="input" id="draftName" maxlength="80" autocomplete="off" enterkeyhint="done"></div><p class="status" id="recordStatus" aria-live="polite"></p><audio id="preview" class="hidden"></audio><section id="trimPanel" class="trim-panel hidden" aria-label="Trim sound"><div class="trim-heading"><strong>Trim <span id="trimDuration"></span></strong><button id="resetTrim" type="button">Reset</button></div><div class="trim-field"><label for="trimStart">Start</label><input id="trimStart" aria-label="Trim start" type="range" min="0" step="0.01" value="0"><input id="trimStartTime" aria-label="Start time in seconds" type="number" min="0" step="0.01" inputmode="decimal"></div><div class="trim-field"><label for="trimEnd">End</label><input id="trimEnd" aria-label="Trim end" type="range" min="0" step="0.01"><input id="trimEndTime" aria-label="End time in seconds" type="number" min="0" step="0.01" inputmode="decimal"></div></section><div class="actions"><button class="secondary hidden" id="playPreview">▶ Preview</button><button class="primary" id="save" class="hidden">Use sound</button></div><div id="soundManagement" class="stack"><button type="button" id="removeEditedSound" class="danger hidden">Delete</button></div><div id="editAreaBottom" class="edit-area-divider hidden" aria-hidden="true"></div><div class="library-heading hidden" id="libraryTools"><button id="undoDelete" class="hidden" type="button">Undo delete</button></div><div id="library"></div></div></div><div id="assignmentToast" class="assignment-toast" role="status" aria-live="polite" aria-atomic="true"></div></dialog>
 <dialog id="catalogDialog"><div class="dialoghead"><h2>Search</h2><button class="close" id="closeCatalog" aria-label="Close"><svg class="close-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5.5 5.5 18.5 18.5M18.5 5.5 5.5 18.5"/></svg></button></div><div class="catalog-body"><div class="catalog-search-wrap"><span class="catalog-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="27" height="27" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.6"/><path d="m16 16 5 5"/></svg></span><input class="input" id="catalogSearch" aria-label="Search sounds" placeholder="" autocomplete="off" autofocus></div><div id="catalogList"></div><p id="catalogStatus" class="status" aria-live="polite"></p></div></dialog><dialog id="settingsDialog"><div class="dialoghead"><h2>Settings</h2><button class="close" id="closeSettings" aria-label="Close"><svg class="close-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5.5 5.5 18.5 18.5M18.5 5.5 5.5 18.5"/></svg></button></div><div style="padding:0 18px 18px"><details class="settings-help"><summary>Themes</summary><div class="theme-choices"><label><input type="radio" name="appTheme" value="streamdeck" checked> Sound Deck</label><label><input type="radio" name="appTheme" value="system"> System</label><label><input type="radio" name="appTheme" value="dark"> Dark</label><label><input type="radio" name="appTheme" value="light"> Light</label></div></details><details class="settings-help"><summary>How to use</summary><div class="help-content"><h4>Soundboard</h4><p>Tap a button to play. Tap again to stop. The note icon opens My Sounds.</p><h4>My Sounds</h4><p>Listen, assign, edit or delete.</p><h4>Add sounds</h4><p>Record, import or browse.</p><h4>Assignments</h4><p>Choose a sound, tap Assign, then select a button.</p></div></details><details class="settings-help"><summary>Privacy &amp; storage</summary><div class="help-content"><p>Recordings and downloads stay on this device. Clearing browser data can erase them.</p><p>Use Backup to save a copy. Microphone access is requested only when recording.</p></div></details><details class="settings-help"><summary>Sound licences</summary><div class="help-content"><p>Online sounds are public domain or CC0.</p></div></details><div class="settings-actions"><details class="settings-help"><summary>Backup and recovery</summary><div class="settings-backup-content"><button id="exportBackup" class="secondary">Backup recorded data</button><button id="importBackup" class="secondary">Restore backup</button><input type="file" id="backupFile" accept=".json,application/json" hidden></div></details><details class="settings-help"><summary>Reset</summary><div style="display:grid;gap:12px;padding:4px 0 16px"><label><input type="checkbox" id="resetClear"> Button assignments</label><label><input type="checkbox" id="resetImports"> Imported sounds</label><label><input type="checkbox" id="resetRecordings"> Recorded sounds</label><label><input type="checkbox" id="resetFactory"> Restore to factory settings</label><button id="resetSelected" class="danger">Reset selected</button></div></details></div></div></dialog>
@@ -2178,32 +2184,28 @@ function renderLibrary(){
  updateClearButton();
  updatePlaybackButtons();
 }
+// Navigation by buttons always jumps directly to the target position.
+// No scroll animation or visible travel between editor/list views.
+function jumpSoundMenuTo(top){
+ const dialog=$('editor');
+ if(!dialog.open)return;
+ dialog.scrollTo({top:Math.max(0,top),behavior:'instant'});
+}
 function positionSoundEditView(token){
- // On entering edit, scroll the WHOLE modal (including its wordmark) so
- // Rec / Import / Search becomes the first visible row. Do not pin the header.
- requestAnimationFrame(()=>{
-  const dialog=$('editor');
-  const toolbar=$('minePanel').querySelector(':scope > .actions');
-  if(token!==editLoadToken||!dialog.open||!toolbar)return;
-  const currentTop=toolbar.getBoundingClientRect().top;
-  const preferredTop=dialog.getBoundingClientRect().top+24;
-  dialog.scrollTop=Math.max(0,dialog.scrollTop+currentTop-preferredTop);
- });
+ const dialog=$('editor');
+ const toolbar=$('minePanel').querySelector(':scope > .actions');
+ if(token!==editLoadToken||!dialog.open||!toolbar)return;
+ const currentTop=toolbar.getBoundingClientRect().top;
+ const preferredTop=dialog.getBoundingClientRect().top+24;
+ jumpSoundMenuTo(dialog.scrollTop+currentTop-preferredTop);
 }
 function restoreSoundListPosition(){
  const position=soundListReturnScrollTop;
  soundListReturnScrollTop=null;
- if(position===null)return;
- const dialog=$('editor');
- const token=editLoadToken;
- // The editor removes several controls above the list when it closes.
- // Restore its previous scroll offset after that layout change, not before.
- const restore=()=>{
-  if(dialog.open&&token===editLoadToken&&editedSoundId===null)
-   dialog.scrollTop=position;
- };
- restore();
- requestAnimationFrame(restore);
+ if(position===null||editedSoundId!==null)return;
+ // The controls have already collapsed and the list has been rendered.
+ // Restore synchronously, without an additional animation frame.
+ jumpSoundMenuTo(position);
 }
 async function editSound(id){
  if(libraryBusy)return;
@@ -2227,7 +2229,12 @@ async function editSound(id){
    }catch(e){console.warn('Original bundled recording unavailable',e)}
   }
   if(token!==editLoadToken||!$('editor').open)return;
-  recordBlob=blob;recordName=sound.name;await setPreview(blob,id,sourceBlob,blob);
+  recordBlob=blob;recordName=sound.name;
+  const loadingPreview=setPreview(blob,id,sourceBlob,blob);
+  // Controls appear synchronously at the start of setPreview: jump now, not
+  // after the audio decoder finishes loading.
+  positionSoundEditView(token);
+  await loadingPreview;
   if(token===editLoadToken&&$('editor').open&&trimBuffer)$('recordStatus').textContent='';
  }catch(e){
   if(token===editLoadToken){resetPreview();$('recordStatus').textContent='Unable to edit: '+e.message}
