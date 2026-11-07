@@ -516,13 +516,30 @@ body[data-theme="dark"] .rubber .deck-wiki-image{
  #catalogDialog[open]{height:min(76dvh,820px)!important}
 }
 
-/* Equal optical breathing room above the Sound Deck logo and below the
-   last row of names. Only the main screen moves, not any dialogs. */
-body > header,body > main{
- transform:translateY(var(--board-vertical-shift,0px));
+/* Soundboard header: real room above the wordmark, not a transform.
+   Grow the header within the screen's flex layout so the board remains
+   contained and the bottom labels stay inside the viewport. */
+body > header{
+ height:clamp(116px,18.8dvh,156px)!important;
+ flex:0 0 clamp(116px,18.8dvh,156px)!important;
+ padding-top:clamp(30px,6.3dvh,53px)!important;
+ padding-bottom:10px!important;
+}
+@media(max-height:650px){
+ body > header{
+  height:106px!important;
+  flex-basis:106px!important;
+  padding-top:24px!important;
+  padding-bottom:8px!important;
+ }
 }
 @media(max-height:600px) and (orientation:landscape){
- body > header,body > main{transform:none}
+ body > header{
+  height:62px!important;
+  flex-basis:62px!important;
+  padding-top:4px!important;
+  padding-bottom:4px!important;
+ }
 }
 </style></head><body><header><h1>Sound Deck</h1><div id="assignHint" class="hidden" aria-live="polite">Tap a button to assign</div><div class="header-actions"><button class="gear" id="mySounds" aria-label="My Sounds"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M9 18V5l11-2v13M9 9l11-2" fill="none" stroke="currentColor" stroke-width="2"/><ellipse cx="6" cy="18" rx="3" ry="2.5" fill="currentColor"/><ellipse cx="17" cy="16" rx="3" ry="2.5" fill="currentColor"/></svg></button><button class="gear" id="settings" aria-label="Settings">⚙</button></div></header><main><div class="board" id="board"><div class="cell"><div class="well"><button class="rubber" style="--c:#e6b96d" aria-label="Jeopardy; tap to play"></button></div><div class="name">Jeopardy</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#eaa18c" aria-label="Empty button 2"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#9ccda9" aria-label="Empty button 3"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#a4c4e5" aria-label="Empty button 4"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#c7a6d8" aria-label="Empty button 5"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#e8cb83" aria-label="Empty button 6"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#8dc9bd" aria-label="Empty button 7"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#df9baf" aria-label="Empty button 8"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#b2c98c" aria-label="Empty button 9"></button></div><div class="name">Empty</div></div></div></main>
 <dialog id="editor"><div class="dialoghead"><h2 id="editTitle">My Sounds</h2><button class="close" id="closeEditor" aria-label="Close">×</button></div><div class="panel" id="panel"><div id="minePanel" class="stack"><div class="actions"><button class="primary" id="record">● Rec</button><button class="secondary" id="import" aria-label="Import audio" title="Import audio"><svg viewBox="0 0 64 64" class="import-folder-icon" aria-hidden="true" focusable="false"><defs><linearGradient id="importFolderBack" x1="0" y1="0" x2="0.65" y2="1"><stop stop-color="#ffffff"/><stop offset="1" stop-color="#aeb5c1"/></linearGradient><linearGradient id="importFolderFront" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#555360"/><stop offset="0.47" stop-color="#24242d"/><stop offset="1" stop-color="#0b0d14"/></linearGradient></defs><path d="M4 14Q4 9 9 9H23L29 14H51Q56 14 56 19V45H4Z" fill="url(#importFolderBack)" stroke="#aeb4bf" stroke-width="1.5"/><path d="M6 20Q6 16 11 16H29L34 20H55Q60 20 60 25V48H6Z" fill="#e2e5ea" stroke="#a2aab8" stroke-width="1.2"/><path d="M4 29Q4 24 10 24H54Q60 24 60 30L57 55Q56 58 51 58H10Q5 58 5 53Z" fill="url(#importFolderFront)" stroke="#888b96" stroke-width="1.5"/><path d="M9 30Q10 27 14 27H51" stroke="#ffffff" stroke-opacity=".45" stroke-width="1.4" stroke-linecap="round"/><path d="M37 31V45.5Q34 44.3 31 46Q27 48.2 29.2 51.6Q31.2 54.4 35 51.8Q38 50 38 47V33L47 30V42Q44 40.8 41 43Q38 45.2 40 48Q42 51 46 48.2Q48 46.8 48 43V25Z" fill="#f4f6fc" stroke="#f4f6fc" stroke-width=".7"/></svg></button><button class="secondary" id="browseSounds" aria-label="Search sounds" title="Search sounds"><svg viewBox="0 0 24 24" width="27" height="27" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.6"/><path d="m16 16 5 5"/></svg></button><input type="file" id="file" accept=".mp3,.mp2,.m4a,.wav,.wave,.aac,.ogg,.oga,.opus,.flac,.aif,.aiff,.caf,.amr" hidden></div><div id="draftNameGroup" class="hidden"><label for="draftName">Sound name</label><input class="input" id="draftName" maxlength="80" autocomplete="off" enterkeyhint="done"></div><p class="status" id="recordStatus" aria-live="polite"></p><audio id="preview" class="hidden"></audio><section id="trimPanel" class="trim-panel hidden" aria-label="Trim sound"><div class="trim-heading"><strong>Trim <span id="trimDuration"></span></strong><button id="resetTrim" type="button">Reset</button></div><div class="trim-field"><label for="trimStart">Start</label><input id="trimStart" aria-label="Trim start" type="range" min="0" step="0.01" value="0"><input id="trimStartTime" aria-label="Start time in seconds" type="number" min="0" step="0.01" inputmode="decimal"></div><div class="trim-field"><label for="trimEnd">End</label><input id="trimEnd" aria-label="Trim end" type="range" min="0" step="0.01"><input id="trimEndTime" aria-label="End time in seconds" type="number" min="0" step="0.01" inputmode="decimal"></div></section><div class="actions"><button class="secondary hidden" id="playPreview">▶ Preview</button><button class="primary" id="save" class="hidden">Use sound</button><button class="secondary hidden" id="assignSound" type="button">Assign</button></div><button type="button" id="backToSounds" class="secondary hidden">← Back to sounds</button><div id="soundManagement" class="stack"><button type="button" id="removeEditedSound" class="danger hidden">Delete</button></div><div class="library-heading"><h3 class="library-title">Sounds</h3><button id="undoDelete" class="hidden" type="button">Undo delete</button></div><div id="library"></div></div></div></dialog>
@@ -1480,39 +1497,11 @@ $('exportBackup').onclick=async()=>{try{const personal=await allSounds();const r
 $('importBackup').onclick=()=>$('backupFile').click();
 $('backupFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());if(data.format!=='set-sounds-backup'||data.version!==1||!Array.isArray(data.records)||!Array.isArray(data.slots))throw Error('Invalid backup file');if(!confirm('Restore this backup? Existing sounds with matching IDs and button assignments will be replaced.'))return;for(const record of data.records){if(typeof record.id!=='string'||typeof record.blob!=='string'||!record.blob.startsWith('data:'))throw Error('Invalid audio record');const blob=await (await fetch(record.blob)).blob();await put('sounds',{id:record.id,name:record.name,source:record.source||'legacy',blob})}slots=data.slots.slice(0,9);soundNames=data.soundNames||{};deletedSounds=data.deletedSounds||[];await put('meta',slots,'slots');await put('meta',soundNames,'sound-names');await put('meta',deletedSounds,'deleted-sounds');sounds=[...builtinSounds,...await allSounds()].filter(x=>!deletedSounds.includes(x.id)).map(x=>({...x,name:soundNames[x.id]||x.name}));stopPlayback();render();$('settingsDialog').close();alert('Backup restored.')}catch(error){alert('Restore failed: '+error.message)}finally{e.target.value=''}};
 $('editor').addEventListener('close',()=>{editLoadToken++;if(recorder?.state==='recording')recorder.stop();resetPreview()});$('closeEditor').onclick=()=>$('editor').close();$('mySounds').onclick=()=>openEditor(active,true);$('settings').onclick=()=>$('settingsDialog').showModal();document.querySelectorAll('input[name="appTheme"]').forEach(input=>input.addEventListener('change',()=>{if(input.checked)applyTheme(input.value)}));applyTheme(selectedTheme);$('closeSettings').onclick=()=>$('settingsDialog').close();render();
-// Align actual visible content margins instead of using a fixed offset that
-// looks different on iPhone, iPad and devices with different screen heights.
-function balanceBoardVerticalMargins(){
- if(document.querySelector('dialog[open]'))return;
- const root=document.documentElement;
- const logo=document.querySelector('header h1');
- const labels=Array.from(document.querySelectorAll('#board .cell:nth-last-child(-n+3) .name'));
- if(!logo||!labels.length)return;
- if(window.innerHeight<600&&window.innerWidth>window.innerHeight){
-  root.style.setProperty('--board-vertical-shift','0px');
-  return;
- }
- const previous=parseFloat(root.style.getPropertyValue('--board-vertical-shift'))||0;
- // A text Range measures the last visible glyph, not the label's unused height.
- const lastTextBottom=Math.max(...labels.map(label=>{
-  const range=document.createRange();
-  range.selectNodeContents(label);
-  const bounds=range.getBoundingClientRect();
-  return bounds.height?bounds.bottom:label.getBoundingClientRect().bottom;
- }));
- const logoTop=logo.getBoundingClientRect().top-previous;
- const textBottom=lastTextBottom-previous;
- const bottomGap=window.innerHeight-textBottom;
- const shift=(bottomGap-logoTop)/2;
- const safeShift=Math.max(12-logoTop,Math.min(shift,bottomGap-12));
- root.style.setProperty('--board-vertical-shift',Math.round(safeShift)+'px');
-}
 function fitButtons(){
  const board=$('board');if(!board)return;
  const r=board.getBoundingClientRect(),cols=3,rows=9/cols;
  const diameter=Math.max(28,Math.floor(Math.min((r.width-(cols-1)*8)/cols-4,(r.height-(rows-1)*2)/rows-23)));
  document.documentElement.style.setProperty('--button-diameter',diameter+'px');
- requestAnimationFrame(balanceBoardVerticalMargins);
 }
 addEventListener('resize',fitButtons);if(window.visualViewport)visualViewport.addEventListener('resize',fitButtons);requestAnimationFrame(fitButtons);
 </script></body></html>
