@@ -711,28 +711,9 @@ async function searchCommons(q,target){
 }
 function renderCatalog(){
  const target=$('catalogList');target.replaceChildren();
- const q=$('catalogSearch').value.trim().toLowerCase();commonsSearchSequence++;
- const results=catalogSounds.filter(x=>(x.name+' '+x.category).toLowerCase().includes(q));
- for(const sound of results){
-  const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #8884;flex-wrap:wrap';
-  const info=document.createElement('div');info.style.cssText='flex:1 1 140px;min-width:0';
-  const name=document.createElement('strong');name.textContent=sound.name;
-  const detail=document.createElement('div');detail.style.cssText='font-size:12px;opacity:.8';detail.textContent=sound.category+' · '+sound.license+' · '+sound.author;
-  const source=document.createElement('a');source.href=sound.page;source.target='_blank';source.rel='noopener noreferrer';source.textContent='Source / licence';source.style.fontSize='12px';
-  info.append(name,detail,source);
-  const preview=document.createElement('button');preview.textContent='Play';preview.className='secondary';
-  preview.onclick=async()=>{try{if(catalogPreview){catalogPreview.pause();catalogPreview=null}const url=await catalogFileUrl(sound.file);catalogPreview=new Audio(url);await catalogPreview.play();$('catalogStatus').textContent=''}catch(e){$('catalogStatus').textContent='Preview failed: '+e.message}};
-  const download=document.createElement('button');download.textContent=sounds.some(x=>x.id===sound.id)?'Saved':'Download';download.className='primary';download.disabled=sounds.some(x=>x.id===sound.id);
-  download.onclick=async()=>{download.disabled=true;download.textContent='Downloading…';try{
-   const url=await catalogFileUrl(sound.file);const response=await fetch(url);if(!response.ok)throw Error('Audio download failed');const blob=await response.blob();
-   if(!blob.size||blob.size>30*1024*1024)throw Error('Audio file exceeds 30 MB limit');
-   const item={id:sound.id,name:sound.name,blob,source:'catalog',attribution:{author:sound.author,license:sound.license,url:sound.page}};
-   await put('sounds',item);deletedSounds=deletedSounds.filter(id=>id!==sound.id);await put('meta',deletedSounds,'deleted-sounds');
-   sounds.push(item);renderLibrary();download.textContent='Saved';$('catalogStatus').textContent=sound.name+' saved to My Sounds for offline use.';
-  }catch(e){download.disabled=false;download.textContent='Download';$('catalogStatus').textContent='Download failed: '+e.message}};
-  row.append(info,preview,download);target.append(row);
- }
- if(!results.length){target.textContent='Searching online…';searchCommons(q,target)}
+ const q=$('catalogSearch').value.trim().toLowerCase();
+ commonsSearchSequence++;
+ if(q)searchCommons(q,target);
 }
 $('browseSounds').onclick=()=>{$('catalogSearch').value='';$('catalogStatus').textContent='';renderCatalog();$('catalogDialog').showModal()};
 $('closeCatalog').onclick=()=>{$('catalogDialog').close()};
