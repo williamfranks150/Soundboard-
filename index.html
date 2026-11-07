@@ -967,28 +967,45 @@ function soundSearchNormalize(value){
 function soundSearchRelevance(page,query,aliases){
  const filename=String(page.title||'').replace(/^File:/i,'').replace(/\.[^.]+$/,'');
  const separated=filename.replace(/[_-]+/g,' ').trim();
- // Wiktionary pronunciation filenames and language-lesson clips are not effects.
+ // Vocabulary recordings are typically prefixed with a language code.
  if(/^(?:en(?: (?:us|uk|gb|au|ca))?|fr|de|es|pt|it|ru|ja|zh|hi|ar|nl|ko|pl|sv|fi|da|no|tr|vi|id|bn|ta|te|pa|kcg)(?:\s|$)/i.test(separated)
   ||/^LL[ _-]Q\d+/i.test(filename)
   ||/\p{L}/u.test(separated.replace(/\p{Script=Latin}/gu,'')))return -Infinity;
- // Avoid hits where the requested word is just a translated gloss in parentheses.
  const name=soundSearchNormalize(filename.replace(/\([^)]*\)/g,' '));
+ const original=soundSearchNormalize(filename);
  const matches=aliases.filter(term=>(' '+name+' ').includes(' '+term+' '));
  if(!matches.length)return -Infinity;
- if(/\b(wiktionary|pronunciation|pronouncing|dictionary|language lesson|vocabulary|translation|translated|tts|text to speech|speech synthesis|audiobook|audio book|librivox|chapter|poetry reading|lecture|interview|sermon|podcast|narration|spoken word|word recording)\b/i.test(name))return -Infinity;
- if(/\b(occurrence at owl creek bridge|owl creek bridge|ambrose bierce)\b/i.test(name))return -Infinity;
+ const info=page.imageinfo?.[0];
+ const metadata=String(info?.extmetadata?.ImageDescription?.value||'')
+  .replace(/<[^>]*>/g,' ').replace(/&[^;]+;/g,' ').toLowerCase();
+ // Spoken encyclopedias, speech synthesis, vocabulary, radio shows, narrated
+ // articles and old music releases can have animal names in their titles.
+ const disallowedSpeech=/\b(wiktionary|spoken wikipedia|spoken article|wikipedia reading|read aloud|reading of|ai generated voice|ai generated speech|synthetic speech|synthetic voice|machine generated voice|text to speech|speech synthesis|audiobook|audio book|librivox|pronunciation|pronouncing|dictionary|vocabulary|translation|translated|language lesson|narration|narrated|podcast|lecture|sermon|interview|historical speech|chapter reading|gramophone|phonograph|78\s*rpm|78rpm|radio programme|radio program|opera|symphony)\b/i;
+ if(disallowedSpeech.test(original)||disallowedSpeech.test(metadata))return -Infinity;
+ if(/\b(occurrence at owl creek bridge|owl creek bridge|ambrose bierce)\b/i.test(original))return -Infinity;
  if(query==='elephant'&&/\b(garlic|plant|flower|grass|ear|seal|foot|stone)\b/i.test(name))return -Infinity;
  const musicWanted=/\b(song|music|dance|piano|concert|band|guitar|drum|melody|theme|jingle|beat)\b/i.test(query);
- const quote=/\b(movie|film|tv|television|quote|quotes|catchphrase|dialogue|dialog|scene|soundbite|comedy|meme)\b/i.test(name);
- if(!musicWanted&&!quote&&/\b(song|music|musical|dance|piano|concert|band|anthem|remix|cover|karaoke|hymn)\b/i.test(name))return -Infinity;
- const effects=/\b(sound|sounds|effect|effects|sfx|recording|foley|nature|animal|wildlife|ambience|ambient|roar|roaring|trumpeting|quack|quacking|bark|barking|meow|meowing|chirp|chirping|howl|howling|crying|sobbing|weeping|screaming|rainfall|thunder|splash|splashing|water|waves|babbling|clapping|applause)\b/i;
+ const quote=/\b(movie|film|tv|television|quote|quotes|catchphrase|dialogue|dialog|scene|soundbite|comedy|meme)\b/i.test(original);
+ if(!musicWanted&&!quote&&/\b(song|music|musical|dance|piano|concert|band|anthem|remix|cover|karaoke|hymn|soundtrack)\b/i.test(original))return -Infinity;
+ const effects=/\b(sound|sounds|effect|effects|sfx|recording|foley|nature|animal|wildlife|ambience|ambient|roar|roaring|trumpet|trumpeting|quack|quacking|bark|barking|meow|meowing|chirp|chirping|howl|howling|cry|cries|crying|sobbing|weeping|screaming|rainfall|thunder|splash|splashing|water|waves|babbling|clapping|applause|vocal|vocalization|vocalisation|call|calls)\b/i;
+ const descriptive=effects.test(name);
+ // For single-word animal and nature searches, an unrelated document/music
+ // title is not a sound effect. Accept brief titles and clear sound descriptions.
+ const words=name.split(' ').filter(Boolean);
+ const simpleTitle=words.length<=3;
+ const animalOrNature=/^(elephant|lion|duck|dog|cat|bird|frog|horse|cow|monkey|wolf|cricket|crickets|rain|creek|stream|brook|river|ocean|sea|thunder)$/i.test(query);
+ if(animalOrNature&&!descriptive&&!simpleTitle&&!quote)return -Infinity;
+ // 'Wikipedia Elephant communication' isn't a recording of elephant calls.
+ if(/\b(wikipedia|encyclopedia|communication|historical recording|article|presentation|documentary)\b/i.test(name)&&!descriptive)return -Infinity;
  let score=matches.includes(query)?450:250;
  if(name===query)score+=300;
  if(name.startsWith(query+' '))score+=130;
- if(effects.test(name))score+=200;
+ if(descriptive)score+=250;
  if(quote&&query.includes(' '))score+=140;
  score+=matches.length*15;
- score-=Math.min(name.length,150)/10;
+ score-=Math.min(name.length,150)/8;
+ // Long descriptive titles are less likely to be the short, direct effect.
+ if(animalOrNature&&words.length>6&&!descriptive)score-=250;
  return score;
 }
 function soundSearchDuration(info){
@@ -1053,7 +1070,7 @@ async function searchCommons(q,target){
      ||!/\.(ogg|oga|mp3|wav|flac)(?:\?|$)/i.test(info.url))continue;
    const description=String(meta.ImageDescription?.value||'')
     .replace(/<[^>]*>/g,' ').replace(/&[^;]+;/g,' ').toLowerCase();
-   if(/\b(wiktionary|pronunciation|dictionary|language lesson|vocabulary|translation|word recording|spoken word|librivox|audiobook|audio book|chapter reading|poetry reading|lecture|podcast|sermon|full audiobook)\b/i.test(description))continue;
+   if(/\b(wiktionary|spoken wikipedia|spoken article|wikipedia reading|ai.generated voice|machine.generated voice|synthetic speech|synthetic voice|text.to.speech|speech synthesis|pronunciation|dictionary|language lesson|vocabulary|translation|word recording|spoken word|librivox|audiobook|audio book|chapter reading|poetry reading|lecture|podcast|sermon|full audiobook|gramophone|phonograph|78\s*rpm)\b/i.test(description))continue;
    const name=page.title.replace(/^File:/,'').replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').trim();
    const row=document.createElement('div');row.className='catalog-result';
    const label=document.createElement('div');label.style.cssText='flex:1;min-width:0';
