@@ -1008,6 +1008,31 @@ function soundSearchRelevance(page,query,aliases){
  if(animalOrNature&&words.length>6&&!descriptive)score-=250;
  return score;
 }
+// Exclude identifiable music recordings made before 1950, but retain
+// contemporary performances of older compositions and non-music effects.
+function soundSearchIsPre1950Music(page,query){
+ const title=String(page?.title||'').replace(/^File:/i,'');
+ const info=page?.imageinfo?.[0]||{};
+ const meta=info.extmetadata||{};
+ const description=String(meta.ImageDescription?.value||'').replace(/<[^>]*>/g,' ');
+ const music=/\b(music|song|singer|singing|musical|orchestra|orchestral|piano|concert|jazz|swing|blues|folk song|hymn|opera|symphony|phonograph|gramophone|78\s*rpm|78rpm|vinyl|musician|vocal|album|record label|recorded music)\b/i;
+ const musicRequest=/\b(music|song|piano|guitar|violin|concert|band|jazz|blues|hymn|tune|melody|orchestra|symphony|opera)\b/i.test(query);
+ if(!musicRequest&&!music.test(title+' '+description))return false;
+ const oldYear=/\b(?:1[6-8]\d{2}|19[0-4]\d)\b/;
+ const items=[...(info.metadata||[]),...(info.commonmetadata||[])];
+ const relevantDates=items.filter(item=>/^(originaldate|originaldatetime|recordingdate|recorded|originalreleasedate|releasedate|year)$/i.test(item.name||''));
+ // Prefer explicit recording/release dates over composition dates.
+ const explicitDate=[...relevantDates.map(item=>String(item.value||'')),...[
+  ...description.matchAll(/\b(?:recorded|recording made|released|performed)\s*(?:in|on|during|around|circa|ca\.?|c\.)?\s*(?:the\s*)?((?:1[6-9]\d{2}|20\d{2})(?:s)?)/gi)
+ ].map(match=>match[1])];
+ const modernYear=/\b(?:19[5-9]\d|20\d{2})\b/;
+ if(explicitDate.some(value=>modernYear.test(value)))return false;
+ if(explicitDate.some(value=>oldYear.test(value)))return true;
+ // A historical year in a music file title generally identifies the
+ // recording; exclude these unless the title clearly specifies composition.
+ if(oldYear.test(title)&&!/\b(composed|written|composition|opus|op\.)\b/i.test(title))return true;
+ return false;
+}
 function soundSearchDuration(info){
  const items=[...(info?.metadata||[]),...(info?.commonmetadata||[])];
  const entry=items.find(item=>/^(length|duration|playtime)$/i.test(item.name||''));
@@ -1062,6 +1087,7 @@ async function searchCommons(q,target){
    if(sequence!==commonsSearchSequence)return;
    const info=page.imageinfo?.[0],meta=info?.extmetadata||{};
    const duration=soundSearchDuration(info);
+   if(soundSearchIsPre1950Music(page,q))continue;
    // Longer environmental clips are fine; full-length books/programs are not.
    if(duration!==null&&duration>=1800)continue;
    const license=String(meta.LicenseShortName?.value||'').replace(/<[^>]+>/g,'');
