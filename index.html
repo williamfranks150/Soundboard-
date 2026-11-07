@@ -756,7 +756,10 @@ async function playSound(id,buttonIndex=null){
  const sound=sounds.find(s=>s.id===id);
  if(!sound)return;
  stopDraftPreview();
- const stopOnly=playing?.soundId===id;
+ // Only stop on a second tap of the same soundboard button.
+ // A different button always interrupts and starts its own clip, even
+ // when both buttons happen to reference the same saved sound.
+ const stopOnly=!!playing&&playing.soundId===id&&playingButtonIndex===buttonIndex;
  stopPlayback();
  if(stopOnly)return;
  const url=sound.blob?URL.createObjectURL(sound.blob):sound.url;
