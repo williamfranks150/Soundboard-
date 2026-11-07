@@ -162,9 +162,29 @@ button:disabled{opacity:.5;cursor:default}
 #renameForm h2{margin:0;font-size:20px}
 #renameError{margin:0;font-size:13px;color:#9d2828}
 #renameError:empty{display:none}
+
+.library-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#minePanel .library-heading .library-title{margin:4px 0}
+#undoDelete{border:0;background:transparent;color:#0988f5;padding:10px 0;font-size:14px;min-height:44px}
+#library{display:grid;gap:10px}
+.sound-row{position:relative;overflow:hidden;border-radius:12px;background:#b72c35;isolation:isolate}
+#library .library-item{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:6px 8px;padding:10px 12px!important;min-height:0;border:1px solid #fff7;border-radius:12px;background:#d4e5f3;transition:transform 150ms ease;touch-action:pan-y}
+#library .library-item span.sound-title{font-size:16px;line-height:1.3;min-width:0;overflow-wrap:anywhere;align-self:center;padding:6px 0}
+.sound-actions{grid-column:1/-1;display:grid;grid-template-columns:44px 1fr 1fr;gap:8px}
+#library .library-item .sound-actions button{height:44px;min-width:0!important;padding:8px!important;border:1px solid #b5a99a;border-radius:9px;background:#fff9ed;color:#0988f5;font-size:15px;font-weight:600}
+#library .library-item button.reorder-handle{width:44px;min-width:44px;padding:0;border:0;background:transparent;color:#625c54;touch-action:none;cursor:grab;display:flex;align-items:center;justify-content:center}
+.reorder-handle svg{width:22px;height:22px;pointer-events:none}
+#library button.swipe-delete{position:absolute;inset:0 0 0 auto;width:84px;border:0;background:#b72c35;color:white;font-size:14px;font-weight:750;border-radius:0;visibility:hidden}
+.sound-row.swiped .library-item{transform:translateX(-84px)}
+#library .sound-row.swiped .swipe-delete{visibility:visible}
+.sound-row.dragging{opacity:.7;outline:2px solid #0988f5;outline-offset:-2px}
+#deleteDialog{max-width:min(92vw,420px)}
+.confirm-body{padding:20px;display:grid;gap:16px}
+.confirm-body h2,.confirm-body p{margin:0;overflow-wrap:anywhere}
+.delete-confirm{border:0;border-radius:12px;background:#b72c35;color:white;padding:13px 15px;font-weight:750}
 </style></head><body><header><h1>Soundboard</h1><button class="gear" id="settings" aria-label="Settings">⚙</button></header><main><div class="board" id="board"><div class="cell"><div class="well"><button class="rubber" style="--c:#e6b96d" aria-label="Jeopardy; tap to play"></button></div><div class="name">Jeopardy</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#eaa18c" aria-label="Empty button 2"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#9ccda9" aria-label="Empty button 3"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#a4c4e5" aria-label="Empty button 4"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#c7a6d8" aria-label="Empty button 5"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#e8cb83" aria-label="Empty button 6"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#8dc9bd" aria-label="Empty button 7"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#df9baf" aria-label="Empty button 8"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#b2c98c" aria-label="Empty button 9"></button></div><div class="name">Empty</div></div></div></main>
-<dialog id="editor"><div class="dialoghead"><h2 id="editTitle">My Sounds</h2><button class="close" id="closeEditor" aria-label="Close">×</button></div><div class="panel" id="panel"><div id="minePanel" class="stack"><div class="actions"><button class="primary" id="record">● Record</button><button class="secondary" id="import">Import audio</button><input type="file" id="file" hidden></div><div id="draftNameGroup" class="hidden"><label for="draftName">Sound name</label><input class="input" id="draftName" maxlength="80" autocomplete="off" enterkeyhint="done"></div><p class="status" id="recordStatus" aria-live="polite"></p><audio id="preview" class="hidden"></audio><section id="trimPanel" class="trim-panel hidden" aria-label="Trim sound"><div class="trim-heading"><strong>Trim <span id="trimDuration"></span></strong><button id="resetTrim" type="button">Reset</button></div><div class="trim-field"><label for="trimStart">Start</label><input id="trimStart" aria-label="Trim start" type="range" min="0" step="0.01" value="0"><input id="trimStartTime" aria-label="Start time in seconds" type="number" min="0" step="0.01" inputmode="decimal"></div><div class="trim-field"><label for="trimEnd">End</label><input id="trimEnd" aria-label="Trim end" type="range" min="0" step="0.01"><input id="trimEndTime" aria-label="End time in seconds" type="number" min="0" step="0.01" inputmode="decimal"></div></section><div class="actions"><button class="secondary" id="playPreview">▶ Preview</button><button class="primary" id="save">Use sound</button></div><button class="danger" id="clear">Clear button</button><h3 class="library-title">Saved sounds</h3><div id="library"></div></div></div></dialog>
-<dialog id="renameDialog" aria-labelledby="renameTitle"><form id="renameForm"><h2 id="renameTitle">Rename sound</h2><label for="renameInput">Sound name</label><input class="input" id="renameInput" maxlength="80" required autocomplete="off" enterkeyhint="done"><p id="renameError" role="alert"></p><div class="actions"><button class="secondary" id="cancelRename" type="button">Cancel</button><button class="primary" id="saveRename" type="submit">Save</button></div></form></dialog><dialog id="settingsDialog"><div class="dialoghead"><h2>Settings</h2><button class="close" id="closeSettings" aria-label="Close">×</button></div><div style="padding:0 18px 18px"><details><summary style="cursor:pointer;font-weight:750;padding:12px 0">Help</summary><div style="font-size:15px;line-height:1.5"><p>Tap or hold a sound title on the board or in Saved sounds to rename it. The name updates everywhere that sound is assigned. New recordings and imports have an editable Sound name field before saving.</p><p>Tap a button to play. Tap it again to stop and reset.</p><p>Hold a button to change its sound. Tap an empty button to open My Sounds.</p><p>In Saved sounds, tap play to preview and pause to stop. Tap Use to assign a sound.</p><p>Import audio from Files. MP3, M4A and WAV are supported. The filename becomes the sound name.</p><p>Tap Record to start recording, then Stop recording to finish. Tap Use sound to assign your import or recording.</p><p>After recording or importing, adjust Start and End to trim in seconds. Preview plays the selected section. Use sound saves that section. Reset restores the full selection before saving. For a saved recording, tap Trim to edit it; saving updates that sound wherever it is assigned.</p><p>Clear button removes its assignment. The sound stays in Saved sounds.</p><p>Imports, recordings and button assignments are saved on this device. Clearing website data deletes them.</p><p>Microphone recording requires permission and a secure HTTPS connection.</p></div></details></div></dialog>
+<dialog id="editor"><div class="dialoghead"><h2 id="editTitle">My Sounds</h2><button class="close" id="closeEditor" aria-label="Close">×</button></div><div class="panel" id="panel"><div id="minePanel" class="stack"><div class="actions"><button class="primary" id="record">● Record</button><button class="secondary" id="import">Import audio</button><input type="file" id="file" hidden></div><div id="draftNameGroup" class="hidden"><label for="draftName">Sound name</label><input class="input" id="draftName" maxlength="80" autocomplete="off" enterkeyhint="done"></div><p class="status" id="recordStatus" aria-live="polite"></p><audio id="preview" class="hidden"></audio><section id="trimPanel" class="trim-panel hidden" aria-label="Trim sound"><div class="trim-heading"><strong>Trim <span id="trimDuration"></span></strong><button id="resetTrim" type="button">Reset</button></div><div class="trim-field"><label for="trimStart">Start</label><input id="trimStart" aria-label="Trim start" type="range" min="0" step="0.01" value="0"><input id="trimStartTime" aria-label="Start time in seconds" type="number" min="0" step="0.01" inputmode="decimal"></div><div class="trim-field"><label for="trimEnd">End</label><input id="trimEnd" aria-label="Trim end" type="range" min="0" step="0.01"><input id="trimEndTime" aria-label="End time in seconds" type="number" min="0" step="0.01" inputmode="decimal"></div></section><div class="actions"><button class="secondary" id="playPreview">▶ Preview</button><button class="primary" id="save">Use sound</button></div><button class="danger" id="clear">Clear button</button><div class="library-heading"><h3 class="library-title">Saved sounds</h3><button id="undoDelete" class="hidden" type="button">Undo delete</button></div><div id="library"></div></div></div></dialog>
+<dialog id="deleteDialog" aria-labelledby="deleteTitle"><div class="confirm-body"><h2 id="deleteTitle">Delete sound?</h2><p id="deleteName"></p><div class="actions"><button class="secondary" id="cancelDelete">Cancel</button><button class="delete-confirm" id="confirmDelete">Delete</button></div></div></dialog><dialog id="renameDialog" aria-labelledby="renameTitle"><form id="renameForm"><h2 id="renameTitle">Rename sound</h2><label for="renameInput">Sound name</label><input class="input" id="renameInput" maxlength="80" required autocomplete="off" enterkeyhint="done"><p id="renameError" role="alert"></p><div class="actions"><button class="secondary" id="cancelRename" type="button">Cancel</button><button class="primary" id="saveRename" type="submit">Save</button></div></form></dialog><dialog id="settingsDialog"><div class="dialoghead"><h2>Settings</h2><button class="close" id="closeSettings" aria-label="Close">×</button></div><div style="padding:0 18px 18px"><details><summary style="cursor:pointer;font-weight:750;padding:12px 0">Help</summary><div style="font-size:15px;line-height:1.5"><p>Tap or hold a sound title on the board or in Saved sounds to rename it. The name updates everywhere that sound is assigned. New recordings and imports have an editable Sound name field before saving.</p><p>Tap a button to play. Tap it again to stop and reset.</p><p>Hold a button to change its sound. Tap an empty button to open My Sounds.</p><p>In Saved sounds, tap play to preview and pause to stop. Tap Use to assign a sound.</p><p>Import audio from Files. MP3, M4A and WAV are supported. The filename becomes the sound name.</p><p>Tap Record to start recording, then Stop recording to finish. Tap Use sound to assign your import or recording.</p><p>After recording or importing, adjust Start and End to trim in seconds. Preview plays the selected section. Use sound saves that section. Reset restores the full selection before saving. Tap Edit on any saved sound to change its name and trim it. Save changes updates that clip everywhere it is assigned.</p><p>Swipe a sound left, tap Delete, then confirm Delete to remove it and clear its assigned buttons. Undo delete restores the most recently deleted sound.</p><p>Drag the handle beside a title to reorder sounds. With a keyboard, focus the handle and use the up and down arrows.</p><p>Clear button removes its assignment. The sound stays in Saved sounds.</p><p>Imports, recordings and button assignments are saved on this device. Clearing website data deletes them.</p><p>Microphone recording requires permission and a secure HTTPS connection.</p></div></details></div></dialog>
 <script>
 'use strict';
 const $=id=>document.getElementById(id),colors=['#e6b96d','#eaa18c','#9ccda9','#a4c4e5','#c7a6d8','#e8cb83','#8dc9bd','#df9baf','#b2c98c','#c4b4e6','#e5b48f','#a5cbd1'];
@@ -225,7 +245,7 @@ const builtinSounds=[
   "url": "audio/godzilla.mp3"
  }
 ];
-let soundNames={},renameTarget=null;
+let soundNames={},renameTarget=null,soundOrder=[],deletedSounds=[],lastDeletion=null,deleteTarget=null,libraryBusy=false,editLoadToken=0;
 let slots=Array.from({length:9},(_,i)=>({id:i,name:i===0?'Jeopardy':'Empty',soundId:i===0?'builtin-jeopardy':null})),sounds=[...builtinSounds],active=0,recorder=null,chunks=[],recordStream=null,recordBlob=null,recordName='',previewURL=null,playing=null,db;
 let request; try { request=indexedDB.open('rubber-soundboard-v1',1); } catch(e) { console.warn('Storage unavailable',e); }
 if(request) request.onupgradeneeded=()=>{const d=request.result;if(!d.objectStoreNames.contains('sounds'))d.createObjectStore('sounds',{keyPath:'id'});if(!d.objectStoreNames.contains('meta'))d.createObjectStore('meta')};
@@ -235,8 +255,14 @@ if(request) request.onsuccess=async()=>{
   const s=await get('meta','slots');
   if(Array.isArray(s)&&s.length>=9)slots=s.slice(0,9);
   soundNames=(await get('meta','sound-names'))||{};
-  sounds=[...builtinSounds,...await allSounds()].map(sound=>({...sound,name:soundNames[sound.id]||sound.name}));
-  slots=slots.map(slot=>({...slot,name:sounds.find(sound=>sound.id===slot.soundId)?.name||slot.name}));
+  soundOrder=(await get('meta','sound-order'))||[];
+  deletedSounds=(await get('meta','deleted-sounds'))||[];
+  lastDeletion=(await get('meta','last-deletion'))||null;
+  const merged=new Map([...builtinSounds,...await allSounds()].map(sound=>[sound.id,sound]));
+  sounds=Array.from(merged.values()).filter(sound=>!deletedSounds.includes(sound.id)).map(sound=>({...sound,name:soundNames[sound.id]||sound.name}));
+  const orderIndex=new Map(soundOrder.map((id,i)=>[id,i]));
+  sounds.sort((a,b)=>(orderIndex.get(a.id)??Infinity)-(orderIndex.get(b.id)??Infinity));
+  slots=slots.map(slot=>deletedSounds.includes(slot.soundId)?{id:slot.id,name:'Empty',soundId:null}:{...slot,name:sounds.find(sound=>sound.id===slot.soundId)?.name||slot.name});
   await installBundledSound();
  }catch(e){console.error(e)}
  render();
@@ -414,7 +440,7 @@ $('renameForm').onsubmit=async e=>{
  }catch(error){$('renameError').textContent='Unable to save: '+error.message}
  finally{$('saveRename').disabled=false;$('cancelRename').disabled=false}
 };
-function openEditor(i){active=i;recordBlob=null;recordName='';resetPreview();$('editTitle').textContent='My Sounds';$('recordStatus').textContent='';$('record').textContent='● Record';renderLibrary();$('editor').showModal()}
+function openEditor(i){editLoadToken++;active=i;recordBlob=null;recordName='';resetPreview();$('editTitle').textContent='My Sounds';$('recordStatus').textContent='';$('record').textContent='● Record';renderLibrary();$('editor').showModal()}
 
 let trimBuffer=null,trimStart=0,trimEnd=0,trimGeneration=0,trimLoading=false,editedSoundId=null;
 function updatePreviewButton(){
@@ -429,7 +455,7 @@ function stopDraftPreview(){
 }
 function resetPreview(){
  trimGeneration++;stopDraftPreview();trimBuffer=null;trimStart=0;trimEnd=0;trimLoading=false;editedSoundId=null;
- $('draftNameGroup').classList.add('hidden');$('draftName').value='';
+ $('draftNameGroup').classList.add('hidden');$('draftName').value='';$('save').textContent='Use sound';
  $('trimPanel').classList.add('hidden');$('save').disabled=false;$('playPreview').disabled=false;
 }
 function syncTrimControls(){
@@ -444,7 +470,7 @@ function syncTrimControls(){
  $('trimDuration').textContent='· '+(trimEnd-trimStart).toFixed(2)+' s';
 }
 async function setPreview(blob,soundId=null){
- resetPreview();stopPlayback();editedSoundId=soundId;
+ resetPreview();stopPlayback();editedSoundId=soundId;$('save').textContent=soundId?'Save changes':'Use sound';
  $('draftName').value=recordName;$('draftNameGroup').classList.remove('hidden');
  const generation=trimGeneration;
  trimLoading=true;$('save').disabled=true;$('playPreview').disabled=true;
@@ -503,8 +529,150 @@ $('trimStartTime').onblur=$('trimEndTime').onblur=()=>{if(trimBuffer)syncTrimCon
 $('resetTrim').onclick=()=>{if(!trimBuffer)return;stopDraftPreview();trimStart=0;trimEnd=trimBuffer.duration;syncTrimControls()};
 $('preview').onplay=updatePreviewButton;$('preview').onpause=updatePreviewButton;
 $('preview').onended=()=>{stopDraftPreview()};
-function renderLibrary(){const target=$('library');target.replaceChildren();for(const sound of sounds){const row=document.createElement('div');row.className='library-item';const name=document.createElement('span');name.textContent=sound.name;makeTitleEditable(name,sound.id,sound.name);const listen=document.createElement('button');listen.className='sound-preview';listen.dataset.soundId=sound.id;listen.dataset.soundName=sound.name;listen.innerHTML=previewIcons.play;listen.title='Play preview';listen.onclick=()=>playSound(sound.id);const use=document.createElement('button');use.textContent='Use';use.onclick=async()=>{slots[active]={id:active,name:sound.name,soundId:sound.id};await put('meta',slots,'slots');render();$('editor').close()};row.append(name,listen);if(sound.blob){const trim=document.createElement('button');trim.textContent='Trim';trim.setAttribute('aria-label','Trim '+sound.name);trim.onclick=()=>{recordBlob=sound.blob;recordName=sound.name;$('recordStatus').textContent=sound.name;setPreview(sound.blob,sound.id);$('editor').scrollTop=0};row.append(trim)}row.append(use);target.append(row)}if(!sounds.length)target.textContent='No saved sounds yet.';updatePlaybackButtons()}
-$('record').onclick=async()=>{if(recorder?.state==='recording'){recorder.stop();return}if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){$('recordStatus').textContent='Microphone recording needs HTTPS or localhost in a supported browser.';return}try{recordStream=await navigator.mediaDevices.getUserMedia({audio:true});if(!$('editor').open){recordStream.getTracks().forEach(t=>t.stop());recordStream=null;return}resetPreview();recordBlob=null;recordName='';chunks=[];const type=['audio/mp4','audio/webm;codecs=opus','audio/webm'].find(t=>MediaRecorder.isTypeSupported(t));recorder=new MediaRecorder(recordStream,type?{mimeType:type}:undefined);recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};recorder.onstop=()=>{if(!$('editor').open){recordStream?.getTracks().forEach(t=>t.stop());recordStream=null;return}recordBlob=new Blob(chunks,{type:recorder.mimeType||'audio/mp4'});recordStream.getTracks().forEach(t=>t.stop());recordStream=null;recordName=nextRecordingName();setPreview(recordBlob);$('recordStatus').textContent='Recording ready.';$('record').textContent='● Record'};recorder.start();$('record').textContent='■ Stop recording';$('recordStatus').textContent='Recording…'}catch(e){$('recordStatus').textContent='Microphone unavailable: '+e.message}}
+
+function renderLibrary(){
+ const target=$('library');target.replaceChildren();
+ $('undoDelete').classList.toggle('hidden',!lastDeletion);
+ for(const sound of sounds){
+  const wrapper=document.createElement('div');wrapper.className='sound-row';wrapper.dataset.soundId=sound.id;
+  const remove=document.createElement('button');remove.className='swipe-delete';remove.textContent='Delete';remove.tabIndex=-1;remove.setAttribute('aria-label','Delete '+sound.name);
+  remove.onclick=()=>openDelete(sound.id);
+  const row=document.createElement('div');row.className='library-item';
+  const name=document.createElement('span');name.className='sound-title';name.textContent=sound.name;makeTitleEditable(name,sound.id,sound.name);
+  const handle=document.createElement('button');handle.className='reorder-handle';handle.setAttribute('aria-label','Move '+sound.name);
+  handle.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  const actions=document.createElement('div');actions.className='sound-actions';
+  const listen=document.createElement('button');listen.className='sound-preview';listen.dataset.soundId=sound.id;listen.dataset.soundName=sound.name;listen.innerHTML=previewIcons.play;listen.onclick=()=>playSound(sound.id);
+  const edit=document.createElement('button');edit.textContent='Edit';edit.setAttribute('aria-label','Edit '+sound.name);edit.onclick=()=>editSound(sound.id);
+  const use=document.createElement('button');use.textContent='Use';use.setAttribute('aria-label','Use '+sound.name);
+  use.onclick=async()=>{if(libraryBusy)return;try{slots[active]={id:active,name:sound.name,soundId:sound.id};await put('meta',slots,'slots');render();$('editor').close()}catch(e){$('recordStatus').textContent='Unable to save: '+e.message}};
+  actions.append(listen,edit,use);row.append(name,handle,actions);wrapper.append(remove,row);target.append(wrapper);
+  attachSwipe(wrapper,row,remove);attachReorder(handle,wrapper,sound.id);
+ }
+ if(!sounds.length)target.textContent='No saved sounds.';
+ updatePlaybackButtons();
+}
+async function editSound(id){
+ if(libraryBusy)return;
+ const sound=sounds.find(s=>s.id===id);if(!sound)return;
+ const token=++editLoadToken;resetPreview();stopPlayback();recordBlob=null;recordName=sound.name;
+ $('recordStatus').textContent='Loading…';$('save').disabled=true;$('playPreview').disabled=true;$('editor').scrollTop=0;
+ try{
+  let blob=sound.blob;
+  if(!blob){const response=await fetch(sound.url);if(!response.ok)throw Error('Audio unavailable.');blob=await response.blob()}
+  if(token!==editLoadToken||!$('editor').open)return;
+  recordBlob=blob;recordName=sound.name;await setPreview(blob,id);
+  if(token===editLoadToken&&$('editor').open&&trimBuffer)$('recordStatus').textContent='';
+ }catch(e){
+  if(token===editLoadToken){resetPreview();$('recordStatus').textContent='Unable to edit: '+e.message}
+ }
+}
+function closeSwipes(except=null){
+ document.querySelectorAll('#library .sound-row.swiped').forEach(row=>{
+  if(row===except)return;row.classList.remove('swiped');row.querySelector('.swipe-delete').tabIndex=-1;
+ });
+}
+function attachSwipe(wrapper,row,remove){
+ let start=null,horizontal=false,suppressClick=false;
+ row.addEventListener('pointerdown',e=>{
+  if(!e.isPrimary||e.button!==0||e.target.closest('button'))return;
+  start={x:e.clientX,y:e.clientY};horizontal=false;suppressClick=false;
+ });
+ row.addEventListener('pointermove',e=>{
+  if(!start)return;
+  const dx=e.clientX-start.x,dy=e.clientY-start.y;
+  if(!horizontal&&Math.abs(dy)>12&&Math.abs(dy)>Math.abs(dx)){start=null;return}
+  if(Math.abs(dx)>15&&Math.abs(dx)>Math.abs(dy)){horizontal=true;row.style.transition='none';row.style.transform='translateX('+Math.max(-84,Math.min(0,(wrapper.classList.contains('swiped')?-84:0)+dx))+'px)'}
+ });
+ const finish=e=>{
+  if(!start)return;
+  const dx=e.clientX-start.x;start=null;row.style.transition='';row.style.transform='';
+  if(horizontal){suppressClick=true;const open=dx<-35||(wrapper.classList.contains('swiped')&&dx<35);closeSwipes(wrapper);wrapper.classList.toggle('swiped',open);remove.tabIndex=open?0:-1}
+ };
+ row.addEventListener('pointerup',finish);
+ row.addEventListener('pointercancel',()=>{start=null;row.style.transition='';row.style.transform=''});
+ row.addEventListener('click',e=>{if(suppressClick){e.preventDefault();e.stopImmediatePropagation();suppressClick=false}},true);
+ row.addEventListener('keydown',e=>{if(e.key==='Delete'){e.preventDefault();openDelete(wrapper.dataset.soundId)}});
+}
+function attachReorder(handle,wrapper,id){
+ let dragging=false,lastY=0,frame=null,before=[],pointerId=null;
+ const moveAt=y=>{
+  const other=Array.from($('library').children).filter(el=>el!==wrapper&&el.classList.contains('sound-row'));
+  const next=other.find(el=>{const r=el.getBoundingClientRect();return y<r.top+r.height/2});
+  $('library').insertBefore(wrapper,next||null);
+ };
+ const autoScroll=()=>{
+  if(!dragging)return;const rect=$('editor').getBoundingClientRect(),header=$('editor').querySelector('.dialoghead').getBoundingClientRect();
+  if(lastY<header.bottom+35)$('editor').scrollTop-=8;
+  else if(lastY>rect.bottom-40)$('editor').scrollTop+=8;
+  moveAt(lastY);frame=requestAnimationFrame(autoScroll);
+ };
+ handle.addEventListener('pointerdown',e=>{
+  if(!e.isPrimary||e.button!==0||libraryBusy)return;
+  e.preventDefault();closeSwipes();before=sounds.map(s=>s.id);pointerId=e.pointerId;lastY=e.clientY;dragging=true;wrapper.classList.add('dragging');handle.setPointerCapture(e.pointerId);frame=requestAnimationFrame(autoScroll);
+ });
+ handle.addEventListener('pointermove',e=>{if(dragging){e.preventDefault();lastY=e.clientY;moveAt(lastY)}});
+ const finish=async(cancelled=false)=>{
+  if(!dragging)return;dragging=false;cancelAnimationFrame(frame);wrapper.classList.remove('dragging');
+  if(handle.hasPointerCapture(pointerId))handle.releasePointerCapture(pointerId);
+  const order=cancelled?before:Array.from($('library').children).map(el=>el.dataset.soundId);
+  if(order.join('|')!==before.join('|'))await saveOrder(order);else if(cancelled)renderLibrary();
+ };
+ handle.addEventListener('pointerup',()=>finish());handle.addEventListener('pointercancel',()=>finish(true));
+ handle.addEventListener('keydown',async e=>{
+  if(!['ArrowUp','ArrowDown'].includes(e.key)||libraryBusy)return;
+  e.preventDefault();const order=sounds.map(s=>s.id),i=order.indexOf(id),j=i+(e.key==='ArrowUp'?-1:1);
+  if(j<0||j>=order.length)return;[order[i],order[j]]=[order[j],order[i]];await saveOrder(order);
+  Array.from(document.querySelectorAll('#library .sound-row')).find(row=>row.dataset.soundId===id)?.querySelector('.reorder-handle').focus();
+ });
+}
+async function saveOrder(order){
+ libraryBusy=true;
+ try{await put('meta',order,'sound-order');const byId=new Map(sounds.map(s=>[s.id,s]));sounds=order.map(id=>byId.get(id)).filter(Boolean);soundOrder=order}
+ catch(e){$('recordStatus').textContent='Unable to reorder: '+e.message}
+ finally{libraryBusy=false;renderLibrary()}
+}
+function openDelete(id){
+ if(libraryBusy)return;const sound=sounds.find(s=>s.id===id);if(!sound)return;
+ deleteTarget=id;$('deleteName').textContent=sound.name;$('deleteDialog').showModal();
+}
+$('cancelDelete').onclick=()=>{if(!libraryBusy)$('deleteDialog').close()};
+$('deleteDialog').addEventListener('cancel',e=>{if(libraryBusy)e.preventDefault()});
+function persistLibraryState(nextSlots,nextDeleted,nextUndo,nextOrder=soundOrder){
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction('meta','readwrite'),meta=tx.objectStore('meta');
+  meta.put(nextSlots,'slots');meta.put(nextDeleted,'deleted-sounds');meta.put(nextUndo,'last-deletion');meta.put(nextOrder,'sound-order');
+  tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
+ });
+}
+$('confirmDelete').onclick=async()=>{
+ if(libraryBusy)return;const sound=sounds.find(s=>s.id===deleteTarget);if(!sound)return;
+ libraryBusy=true;$('confirmDelete').disabled=true;
+ try{
+  const undo={id:sound.id,index:sounds.indexOf(sound),slots:slots.filter(s=>s.soundId===sound.id)};
+  const nextDeleted=[...new Set([...deletedSounds,sound.id])],nextSlots=slots.map(s=>s.soundId===sound.id?{id:s.id,name:'Empty',soundId:null}:s);
+  await persistLibraryState(nextSlots,nextDeleted,undo);
+  if(playing?.soundId===sound.id)stopPlayback();
+  if(editedSoundId===sound.id){editLoadToken++;resetPreview();recordBlob=null;recordName=''}
+  sounds=sounds.filter(s=>s.id!==sound.id);slots=nextSlots;deletedSounds=nextDeleted;lastDeletion=undo;
+  $('deleteDialog').close();render();renderLibrary();
+ }catch(e){$('recordStatus').textContent='Unable to delete: '+e.message;$('deleteDialog').close()}
+ finally{libraryBusy=false;$('confirmDelete').disabled=false}
+};
+$('undoDelete').onclick=async()=>{
+ if(libraryBusy||!lastDeletion)return;libraryBusy=true;
+ try{
+  const undo=lastDeletion,stored=await get('sounds',undo.id),original=stored||builtinSounds.find(s=>s.id===undo.id);if(!original)throw Error('Sound unavailable.');
+  const sound={...original,name:soundNames[undo.id]||original.name},nextDeleted=deletedSounds.filter(id=>id!==undo.id);
+  const nextSlots=slots.map(slot=>!slot.soundId?(undo.slots.find(s=>s.id===slot.id)||slot):slot);
+  const nextSounds=[...sounds];nextSounds.splice(Math.min(undo.index,sounds.length),0,sound);
+  const nextOrder=nextSounds.map(s=>s.id);
+  await persistLibraryState(nextSlots,nextDeleted,null,nextOrder);
+  soundOrder=nextOrder;sounds=nextSounds;deletedSounds=nextDeleted;slots=nextSlots;lastDeletion=null;render();renderLibrary();
+ }catch(e){$('recordStatus').textContent='Unable to restore: '+e.message}
+ finally{libraryBusy=false}
+};
+$('record').onclick=async()=>{editLoadToken++;if(recorder?.state==='recording'){recorder.stop();return}if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){$('recordStatus').textContent='Microphone recording needs HTTPS or localhost in a supported browser.';return}try{recordStream=await navigator.mediaDevices.getUserMedia({audio:true});if(!$('editor').open){recordStream.getTracks().forEach(t=>t.stop());recordStream=null;return}resetPreview();recordBlob=null;recordName='';chunks=[];const type=['audio/mp4','audio/webm;codecs=opus','audio/webm'].find(t=>MediaRecorder.isTypeSupported(t));recorder=new MediaRecorder(recordStream,type?{mimeType:type}:undefined);recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};recorder.onstop=()=>{if(!$('editor').open){recordStream?.getTracks().forEach(t=>t.stop());recordStream=null;return}recordBlob=new Blob(chunks,{type:recorder.mimeType||'audio/mp4'});recordStream.getTracks().forEach(t=>t.stop());recordStream=null;recordName=nextRecordingName();setPreview(recordBlob);$('recordStatus').textContent='Recording ready.';$('record').textContent='● Record'};recorder.start();$('record').textContent='■ Stop recording';$('recordStatus').textContent='Recording…'}catch(e){$('recordStatus').textContent='Microphone unavailable: '+e.message}}
 // Leave the picker unrestricted: iOS Files can classify downloaded MP3s as
 // generic data and disable them when an audio-only accept filter is present.
 // Validate here, after selection, and normalize known audio MIME types.
@@ -517,7 +685,7 @@ function prepareAudioImport(file){
  return file.slice(0,file.size,type);
 }
 $('import').onclick=()=>{$('file').value='';$('file').click()};
-$('file').onchange=()=>{
+$('file').onchange=()=>{editLoadToken++;
  const file=$('file').files?.[0];
  if(!file)return;
  try{
@@ -554,7 +722,7 @@ $('save').onclick=async()=>{
   }
   if(!id){$('recordStatus').textContent='No sound selected.';return}
   const nextSlots=slots.map(slot=>slot.soundId===id?{...slot,name}:slot);
-  nextSlots[active]={id:active,name,soundId:id};
+  if(!editedSoundId)nextSlots[active]={id:active,name,soundId:id};
   const nextNames={...soundNames,[id]:name};
   await persistSoundChange(item,nextSlots,nextNames);
   if(item){const existing=sounds.findIndex(s=>s.id===id);if(existing<0)sounds.push(item);else sounds[existing]=item}
@@ -565,7 +733,7 @@ $('save').onclick=async()=>{
  finally{$('save').disabled=false}
 };
 $('clear').onclick=async()=>{slots[active]={id:active,name:'Empty',soundId:null};await put('meta',slots,'slots');render();$('editor').close()};
-$('editor').addEventListener('close',()=>{if(recorder?.state==='recording')recorder.stop();resetPreview()});$('closeEditor').onclick=()=>$('editor').close();$('settings').onclick=()=>$('settingsDialog').showModal();$('closeSettings').onclick=()=>$('settingsDialog').close();render();
+$('editor').addEventListener('close',()=>{editLoadToken++;if(recorder?.state==='recording')recorder.stop();resetPreview()});$('closeEditor').onclick=()=>$('editor').close();$('settings').onclick=()=>$('settingsDialog').showModal();$('closeSettings').onclick=()=>$('settingsDialog').close();render();
 function fitButtons(){const board=$('board');if(!board)return;const r=board.getBoundingClientRect();const cols=3,rows=9/cols;const diameter=Math.max(28,Math.floor(Math.min((r.width-(cols-1)*8)/cols-4,(r.height-(rows-1)*2)/rows-23)));document.documentElement.style.setProperty('--button-diameter',diameter+'px')}
 addEventListener('resize',fitButtons);if(window.visualViewport)visualViewport.addEventListener('resize',fitButtons);requestAnimationFrame(fitButtons);
 </script></body></html>
