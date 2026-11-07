@@ -1,6 +1,6 @@
 {
-  "name": "Set Sounds",
-  "short_name": "Set Sounds",
+  "name": "Sound Deck",
+  "short_name": "Sound Deck",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
