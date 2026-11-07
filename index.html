@@ -2178,11 +2178,23 @@ function renderLibrary(){
  updateClearButton();
  updatePlaybackButtons();
 }
+function positionSoundEditView(token){
+ // On entering edit, scroll the WHOLE modal (including its wordmark) so
+ // Rec / Import / Search becomes the first visible row. Do not pin the header.
+ requestAnimationFrame(()=>{
+  const dialog=$('editor');
+  const toolbar=$('minePanel').querySelector(':scope > .actions');
+  if(token!==editLoadToken||!dialog.open||!toolbar)return;
+  const currentTop=toolbar.getBoundingClientRect().top;
+  const preferredTop=dialog.getBoundingClientRect().top+24;
+  dialog.scrollTop=Math.max(0,dialog.scrollTop+currentTop-preferredTop);
+ });
+}
 async function editSound(id){
  if(libraryBusy)return;
  const sound=sounds.find(s=>s.id===id);if(!sound)return;
  const token=++editLoadToken;resetPreview();stopPlayback();recordBlob=null;recordName=sound.name;
- $('recordStatus').textContent='Loading…';$('save').disabled=true;$('playPreview').disabled=true;$('editor').scrollTop=0;
+ $('recordStatus').textContent='Loading…';$('save').disabled=true;$('playPreview').disabled=true;
  try{
   let blob=sound.blob;
   if(!blob){const response=await fetch(sound.url);if(!response.ok)throw Error('Audio unavailable.');blob=await response.blob()}
@@ -2201,6 +2213,12 @@ async function editSound(id){
   if(token===editLoadToken&&$('editor').open&&trimBuffer)$('recordStatus').textContent='';
  }catch(e){
   if(token===editLoadToken){resetPreview();$('recordStatus').textContent='Unable to edit: '+e.message}
+ }finally{
+  // Once the name, trim panel and Delete button have reached their final
+  // heights, align the editor as in the compact screenshot.
+  if(token===editLoadToken&&$('editor').open&&!$('draftNameGroup').classList.contains('hidden')){
+   positionSoundEditView(token);
+  }
  }
 }
 function closeSwipes(except=null){
