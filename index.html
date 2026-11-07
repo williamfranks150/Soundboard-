@@ -964,6 +964,42 @@ function soundSearchNormalize(value){
   .replace(/[_-]+/g,' ').replace(/[^\p{L}\p{N}]+/gu,' ')
   .replace(/\s+/g,' ').trim();
 }
+// Interpret everyday search wording as concepts rather than literal filenames.
+// Plurals, irregular nouns, and descriptive phrases share the same search.
+function soundSearchSingular(word){
+ const irregular={
+  babies:'baby',cries:'cry',flies:'fly',wolves:'wolf',geese:'goose',
+  mice:'mouse',children:'child',men:'man',women:'woman',people:'person',
+  teeth:'tooth',feet:'foot',leaves:'leaf',knives:'knife',oxen:'ox',
+  fish:'fish',deer:'deer',sheep:'sheep',species:'species',news:'news'
+ };
+ if(irregular[word])return irregular[word];
+ if(word.length<=3)return word;
+ if(/(?:ches|shes|xes|zzes|sses)$/.test(word))return word.slice(0,-2);
+ if(word.length>4&&/ies$/.test(word))return word.slice(0,-3)+'y';
+ if(/s$/.test(word)&&!/(?:ss|us|is|ous)$/.test(word))return word.slice(0,-1);
+ return word;
+}
+function soundSearchTokenize(value){
+ return soundSearchNormalize(value).split(' ').filter(Boolean).map(soundSearchSingular);
+}
+function soundSearchCanonical(value){
+ const parts=soundSearchTokenize(value);
+ const filler=/^(?:sound|effect|sfx|noise|audio|clip|recording|sample)$/;
+ const meaningful=parts.length>1?parts.filter(part=>!filler.test(part)):parts;
+ return (meaningful.length?meaningful:parts).join(' ');
+}
+function soundSearchPlan(value){
+ const original=soundSearchNormalize(value);
+ const canonical=soundSearchCanonical(value);
+ const alternatives=soundSearchAliases[canonical]||[];
+ const aliasTerms=[canonical,...alternatives].map(soundSearchCanonical).filter(Boolean);
+ const aliases=[...new Set(aliasTerms)];
+ // Search the principal concept first, then specific sound-producing synonyms.
+ const queries=[...new Set([canonical,...alternatives.map(soundSearchNormalize)])]
+  .filter(Boolean).slice(0,4);
+ return {original,canonical,aliases,queries};
+}
 function soundSearchRelevance(page,query,aliases){
  const filename=String(page.title||'').replace(/^File:/i,'').replace(/\.[^.]+$/,'');
  const separated=filename.replace(/[_-]+/g,' ').trim();
@@ -971,8 +1007,8 @@ function soundSearchRelevance(page,query,aliases){
  if(/^(?:en(?: (?:us|uk|gb|au|ca))?|fr|de|es|pt|it|ru|ja|zh|hi|ar|nl|ko|pl|sv|fi|da|no|tr|vi|id|bn|ta|te|pa|kcg)(?:\s|$)/i.test(separated)
   ||/^LL[ _-]Q\d+/i.test(filename)
   ||/\p{L}/u.test(separated.replace(/\p{Script=Latin}/gu,'')))return -Infinity;
- const name=soundSearchNormalize(filename.replace(/\([^)]*\)/g,' '));
  const original=soundSearchNormalize(filename);
+ const name=soundSearchTokenize(filename.replace(/\([^)]*\)/g,' ')).join(' ');
  const matches=aliases.filter(term=>(' '+name+' ').includes(' '+term+' '));
  if(!matches.length)return -Infinity;
  const info=page.imageinfo?.[0];
@@ -1061,12 +1097,13 @@ async function searchCommons(q,target){
  const sequence=++commonsSearchSequence;
  if(!q){target.replaceChildren();return}
  try{
-  const aliases=[...new Set([q,...(soundSearchAliases[q]||[])].map(soundSearchNormalize))].filter(Boolean);
-  const terms=[q,...(soundSearchAliases[q]||[])].slice(0,3);
+  const plan=soundSearchPlan(q);
+  const aliases=plan.aliases;
+  const terms=plan.queries;
   const responses=await Promise.allSettled(terms.map(async term=>{
    const api='https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch='+
      encodeURIComponent(term+' filetype:audio')+
-     '&gsrnamespace=6&gsrlimit=35&gsrsort=relevance&prop=imageinfo&iiprop=url%7Cextmetadata%7Cmetadata%7Ccommonmetadata&format=json&origin=*';
+     '&gsrnamespace=6&gsrlimit=50&gsrsort=relevance&prop=imageinfo&iiprop=url%7Cextmetadata%7Cmetadata%7Ccommonmetadata&format=json&origin=*';
    const response=await fetch(api);
    if(!response.ok)throw Error('Search unavailable');
    return response.json();
@@ -1078,7 +1115,7 @@ async function searchCommons(q,target){
    if(item.status!=='fulfilled')continue;
    for(const page of Object.values(item.value.query?.pages||{}))pages.set(page.pageid,page);
   }
-  const ranked=[...pages.values()].map(page=>({page,score:soundSearchRelevance(page,q,aliases)}))
+  const ranked=[...pages.values()].map(page=>({page,score:soundSearchRelevance(page,plan.canonical,aliases)}))
    .filter(item=>Number.isFinite(item.score)&&item.score>0)
    .sort((a,b)=>b.score-a.score||(a.page.index??999)-(b.page.index??999));
   target.replaceChildren();
