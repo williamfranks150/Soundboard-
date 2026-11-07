@@ -266,6 +266,19 @@ if(request) request.onsuccess=async()=>{
   soundOrder=(await get('meta','sound-order'))||[];
   deletedSounds=(await get('meta','deleted-sounds'))||[];
   lastDeletion=(await get('meta','last-deletion'))||null;
+  // Remove the duplicate imported clip named jeopardy-think-music from this device.
+  // Keep the separately bundled Jeopardy sound and all unrelated recordings.
+  if(!await get('meta','remove-jeopardy-duplicate-v1')){
+   const duplicateIds=(await allSounds()).filter(sound=>sound.name.trim().toLowerCase()==='jeopardy-think-music').map(sound=>sound.id);
+   if(duplicateIds.length){
+    const tx=db.transaction(['sounds','meta'],'readwrite');
+    for(const id of duplicateIds)tx.objectStore('sounds').delete(id);
+    slots=slots.map(slot=>duplicateIds.includes(slot.soundId)?{id:slot.id,name:'Empty',soundId:null}:slot);
+    tx.objectStore('meta').put(slots,'slots');
+    await new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)});
+   }
+   await put('meta',true,'remove-jeopardy-duplicate-v1');
+  }
   const merged=new Map([...builtinSounds,...await allSounds()].map(sound=>[sound.id,sound]));
   sounds=Array.from(merged.values()).filter(sound=>!deletedSounds.includes(sound.id)).map(sound=>({...sound,name:soundNames[sound.id]||sound.name}));
   const orderIndex=new Map(soundOrder.map((id,i)=>[id,i]));
