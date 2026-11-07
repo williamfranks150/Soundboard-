@@ -1360,7 +1360,7 @@ const builtinSounds=[
   "url": "audio/godzilla.mp3"
  }
 ];
-let recordSource=null;let editorOriginalBlob=null;let editorSavedBlob=null;let libraryMode=false;let soundNames={},soundOrder=[],deletedSounds=[],lastDeletion=null,libraryBusy=false,editLoadToken=0;
+let recordSource=null;let editorOriginalBlob=null;let editorSavedBlob=null;let libraryMode=false;let soundNames={},soundOrder=[],deletedSounds=[],lastDeletion=null,libraryBusy=false,editLoadToken=0,soundListReturnScrollTop=null;
 let slots=Array.from({length:9},(_,i)=>({id:i,name:i===0?'Jeopardy':'Empty',soundId:i===0?'builtin-jeopardy':null})),sounds=[...builtinSounds],active=0,recorder=null,chunks=[],recordStream=null,recordBlob=null,recordName='',previewURL=null,playing=null,db;
 let request; try { request=indexedDB.open('rubber-soundboard-v1',1); } catch(e) { console.warn('Storage unavailable',e); }
 if(request) request.onupgradeneeded=()=>{const d=request.result;if(!d.objectStoreNames.contains('sounds'))d.createObjectStore('sounds',{keyPath:'id'});if(!d.objectStoreNames.contains('meta'))d.createObjectStore('meta')};
@@ -1681,7 +1681,7 @@ async function consolidateDuplicateSoundNames(){
 $('draftName').oninput=()=>{recordName=$('draftName').value};
 $('draftName').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();e.target.blur()}};
 function updateClearButton(){}
-function openEditor(i,browse=false){libraryMode=browse;$('editor').classList.toggle('library-mode',browse);editLoadToken++;active=i;recordBlob=null;recordName='';resetPreview();$('editTitle').textContent='My Sounds';$('recordStatus').textContent='';$('record').textContent='● Rec';renderLibrary();updateClearButton();$('editor').showModal();$('editor').scrollTop=0}
+function openEditor(i,browse=false){soundListReturnScrollTop=null;libraryMode=browse;$('editor').classList.toggle('library-mode',browse);editLoadToken++;active=i;recordBlob=null;recordName='';resetPreview();$('editTitle').textContent='My Sounds';$('recordStatus').textContent='';$('record').textContent='● Rec';renderLibrary();updateClearButton();$('editor').showModal();$('editor').scrollTop=0}
 
 let trimBuffer=null,trimStart=0,trimEnd=0,trimGeneration=0,trimLoading=false,editedSoundId=null;
 function updatePreviewButton(){
@@ -1699,7 +1699,7 @@ function resetPreview(){
  $('draftNameGroup').classList.add('hidden');$('draftName').value='';$('save').textContent=libraryMode?'Save sound':'Use sound';
  $('trimPanel').classList.add('hidden');$('playPreview').classList.add('hidden');$('save').classList.add('hidden');$('save').disabled=false;$('playPreview').disabled=false;
 }
-$('backToSounds').onclick=()=>{editLoadToken++;recordBlob=null;recordName='';resetPreview();$('recordStatus').textContent='';renderLibrary();};
+$('backToSounds').onclick=()=>{editLoadToken++;recordBlob=null;recordName='';resetPreview();$('recordStatus').textContent='';renderLibrary();restoreSoundListPosition();};
 function syncTrimControls(){
  const duration=trimBuffer.duration;
  $('trimStart').max=Math.max(0,duration-.01);
@@ -2190,9 +2190,27 @@ function positionSoundEditView(token){
   dialog.scrollTop=Math.max(0,dialog.scrollTop+currentTop-preferredTop);
  });
 }
+function restoreSoundListPosition(){
+ const position=soundListReturnScrollTop;
+ soundListReturnScrollTop=null;
+ if(position===null)return;
+ const dialog=$('editor');
+ const token=editLoadToken;
+ // The editor removes several controls above the list when it closes.
+ // Restore its previous scroll offset after that layout change, not before.
+ const restore=()=>{
+  if(dialog.open&&token===editLoadToken&&editedSoundId===null)
+   dialog.scrollTop=position;
+ };
+ restore();
+ requestAnimationFrame(restore);
+}
 async function editSound(id){
  if(libraryBusy)return;
  const sound=sounds.find(s=>s.id===id);if(!sound)return;
+ // Capture the precise library position before inserting the edit controls.
+ if(editedSoundId===null&&soundListReturnScrollTop===null)
+  soundListReturnScrollTop=$('editor').scrollTop;
  const token=++editLoadToken;resetPreview();stopPlayback();recordBlob=null;recordName=sound.name;
  $('recordStatus').textContent='Loading…';$('save').disabled=true;$('playPreview').disabled=true;
  try{
@@ -2289,7 +2307,7 @@ async function deleteConfirmedSound(id){
   if(editedSoundId===sound.id){editLoadToken++;resetPreview();recordBlob=null;recordName='';$('recordStatus').textContent='Sound removed.'}
   sounds=sounds.filter(s=>s.id!==sound.id);
   slots=nextSlots;deletedSounds=nextDeleted;lastDeletion=undo;
-  render();renderLibrary();updateClearButton();
+  render();renderLibrary();updateClearButton();restoreSoundListPosition();
  }catch(e){
   alert('Unable to delete: '+e.message);
  }finally{
@@ -2434,7 +2452,7 @@ $('save').onclick=async()=>{
   const saved=await saveNamedSound(item,!editedSoundId&&!libraryMode?active:null);
   if(editedSoundId)editedSoundId=saved.id;
   recordBlob=null;recordSource=null;recordName='';resetPreview();
-  render();renderLibrary();$('recordStatus').textContent='';
+  render();renderLibrary();$('recordStatus').textContent='';restoreSoundListPosition();
  }catch(e){$('recordStatus').textContent='Unable to save: '+e.message}
  finally{$('save').disabled=false}
 };
@@ -2470,7 +2488,7 @@ function blobToBase64(blob){return new Promise((resolve,reject)=>{const reader=n
 $('exportBackup').onclick=async()=>{try{const personal=await allSounds();const records=[];for(const sound of personal)records.push({id:sound.id,name:sound.name,source:sound.source||'legacy',blob:await blobToBase64(sound.blob),...(sound.originalBlob?{originalBlob:await blobToBase64(sound.originalBlob)}:{})});const data={format:'set-sounds-backup',version:1,created:new Date().toISOString(),records,slots,soundNames,deletedSounds};const url=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='Set-Sounds-Backup.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}catch(e){alert('Backup failed: '+e.message)}};
 $('importBackup').onclick=()=>$('backupFile').click();
 $('backupFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());if(data.format!=='set-sounds-backup'||data.version!==1||!Array.isArray(data.records)||!Array.isArray(data.slots))throw Error('Invalid backup file');if(!confirm('Restore this backup? Existing sounds with matching IDs and button assignments will be replaced.'))return;for(const record of data.records){if(typeof record.id!=='string'||typeof record.blob!=='string'||!record.blob.startsWith('data:'))throw Error('Invalid audio record');const blob=await (await fetch(record.blob)).blob();const originalBlob=typeof record.originalBlob==='string'&&record.originalBlob.startsWith('data:')?await (await fetch(record.originalBlob)).blob():blob;await put('sounds',{id:record.id,name:record.name,source:record.source||'legacy',blob,originalBlob})}slots=data.slots.slice(0,9);soundNames=data.soundNames||{};deletedSounds=data.deletedSounds||[];await put('meta',slots,'slots');await put('meta',soundNames,'sound-names');await put('meta',deletedSounds,'deleted-sounds');sounds=[...builtinSounds,...await allSounds()].filter(x=>!deletedSounds.includes(x.id)).map(x=>({...x,name:soundNames[x.id]||x.name}));await consolidateDuplicateSoundNames();stopPlayback();render();renderLibrary();$('settingsDialog').close();alert('Backup restored.')}catch(error){alert('Restore failed: '+error.message)}finally{e.target.value=''}};
-$('editor').addEventListener('close',()=>{editLoadToken++;if(recorder?.state==='recording')recorder.stop();stopRecordingUI();resetPreview()});$('closeEditor').onclick=()=>$('editor').close();$('mySounds').onclick=()=>openEditor(active,true);$('settings').onclick=()=>$('settingsDialog').showModal();document.querySelectorAll('input[name="appTheme"]').forEach(input=>input.addEventListener('change',()=>{if(input.checked)applyTheme(input.value)}));applyTheme(selectedTheme);$('closeSettings').onclick=()=>$('settingsDialog').close();render();
+$('editor').addEventListener('close',()=>{editLoadToken++;soundListReturnScrollTop=null;if(recorder?.state==='recording')recorder.stop();stopRecordingUI();resetPreview()});$('closeEditor').onclick=()=>$('editor').close();$('mySounds').onclick=()=>openEditor(active,true);$('settings').onclick=()=>$('settingsDialog').showModal();document.querySelectorAll('input[name="appTheme"]').forEach(input=>input.addEventListener('change',()=>{if(input.checked)applyTheme(input.value)}));applyTheme(selectedTheme);$('closeSettings').onclick=()=>$('settingsDialog').close();render();
 function fitButtons(){
  const board=$('board');if(!board)return;
  const r=board.getBoundingClientRect(),cols=3,rows=9/cols;
