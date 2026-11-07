@@ -676,7 +676,7 @@ body[data-theme="streamdeck"] #editor{
 #editor .assignment-toast.visible{opacity:1;visibility:visible}
 </style></head><body><header><h1>Sound Deck</h1><div id="assignHint" class="hidden" aria-live="polite">Tap a button to assign</div><div class="header-actions"><button class="gear" id="mySounds" aria-label="My Sounds"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M9 18V5l11-2v13M9 9l11-2" fill="none" stroke="currentColor" stroke-width="2"/><ellipse cx="6" cy="18" rx="3" ry="2.5" fill="currentColor"/><ellipse cx="17" cy="16" rx="3" ry="2.5" fill="currentColor"/></svg></button><button class="gear" id="settings" aria-label="Settings">⚙</button></div></header><main><div class="board" id="board"><div class="cell"><div class="well"><button class="rubber" style="--c:#e6b96d" aria-label="Jeopardy; tap to play"></button></div><div class="name">Jeopardy</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#eaa18c" aria-label="Empty button 2"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#9ccda9" aria-label="Empty button 3"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#a4c4e5" aria-label="Empty button 4"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#c7a6d8" aria-label="Empty button 5"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#e8cb83" aria-label="Empty button 6"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#8dc9bd" aria-label="Empty button 7"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#df9baf" aria-label="Empty button 8"></button></div><div class="name">Empty</div></div><div class="cell"><div class="well"><button class="rubber" style="--c:#b2c98c" aria-label="Empty button 9"></button></div><div class="name">Empty</div></div></div></main>
 <dialog id="editor"><div class="dialoghead"><h2 id="editTitle">My Sounds</h2><button class="close" id="closeEditor" aria-label="Close">×</button></div><div class="panel" id="panel"><div id="minePanel" class="stack"><div class="actions"><button class="primary" id="record">● Rec</button><button class="secondary" id="import" aria-label="Import audio" title="Import audio"><svg viewBox="0 0 64 64" class="import-folder-icon" aria-hidden="true" focusable="false"><defs><linearGradient id="importFolderBack" x1="0" y1="0" x2="0.65" y2="1"><stop stop-color="#ffffff"/><stop offset="1" stop-color="#aeb5c1"/></linearGradient><linearGradient id="importFolderFront" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#555360"/><stop offset="0.47" stop-color="#24242d"/><stop offset="1" stop-color="#0b0d14"/></linearGradient></defs><path d="M4 14Q4 9 9 9H23L29 14H51Q56 14 56 19V45H4Z" fill="url(#importFolderBack)" stroke="#aeb4bf" stroke-width="1.5"/><path d="M6 20Q6 16 11 16H29L34 20H55Q60 20 60 25V48H6Z" fill="#e2e5ea" stroke="#a2aab8" stroke-width="1.2"/><path d="M4 29Q4 24 10 24H54Q60 24 60 30L57 55Q56 58 51 58H10Q5 58 5 53Z" fill="url(#importFolderFront)" stroke="#888b96" stroke-width="1.5"/><path d="M9 30Q10 27 14 27H51" stroke="#ffffff" stroke-opacity=".45" stroke-width="1.4" stroke-linecap="round"/><path d="M37 31V45.5Q34 44.3 31 46Q27 48.2 29.2 51.6Q31.2 54.4 35 51.8Q38 50 38 47V33L47 30V42Q44 40.8 41 43Q38 45.2 40 48Q42 51 46 48.2Q48 46.8 48 43V25Z" fill="#f4f6fc" stroke="#f4f6fc" stroke-width=".7"/></svg></button><button class="secondary" id="browseSounds" aria-label="Search sounds" title="Search sounds"><svg viewBox="0 0 24 24" width="27" height="27" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.6"/><path d="m16 16 5 5"/></svg></button><input type="file" id="file" accept=".mp3,.mp2,.m4a,.wav,.wave,.aac,.ogg,.oga,.opus,.flac,.aif,.aiff,.caf,.amr" hidden></div><div id="editAreaTop" class="edit-area-top hidden"><button type="button" id="backToSounds" class="edit-area-close hidden" aria-label="Close sound editor and return to sounds" title="Back to sounds">×</button></div><div id="draftNameGroup" class="hidden"><label for="draftName">Sound name</label><input class="input" id="draftName" maxlength="80" autocomplete="off" enterkeyhint="done"></div><p class="status" id="recordStatus" aria-live="polite"></p><audio id="preview" class="hidden"></audio><section id="trimPanel" class="trim-panel hidden" aria-label="Trim sound"><div class="trim-heading"><strong>Trim <span id="trimDuration"></span></strong><button id="resetTrim" type="button">Reset</button></div><div class="trim-field"><label for="trimStart">Start</label><input id="trimStart" aria-label="Trim start" type="range" min="0" step="0.01" value="0"><input id="trimStartTime" aria-label="Start time in seconds" type="number" min="0" step="0.01" inputmode="decimal"></div><div class="trim-field"><label for="trimEnd">End</label><input id="trimEnd" aria-label="Trim end" type="range" min="0" step="0.01"><input id="trimEndTime" aria-label="End time in seconds" type="number" min="0" step="0.01" inputmode="decimal"></div></section><div class="actions"><button class="secondary hidden" id="playPreview">▶ Preview</button><button class="primary" id="save" class="hidden">Use sound</button></div><div id="soundManagement" class="stack"><button type="button" id="removeEditedSound" class="danger hidden">Delete</button></div><div id="editAreaBottom" class="edit-area-divider hidden" aria-hidden="true"></div><div class="library-heading"><h3 class="library-title">Sounds</h3><button id="undoDelete" class="hidden" type="button">Undo delete</button></div><div id="library"></div></div></div><div id="assignmentToast" class="assignment-toast" role="status" aria-live="polite" aria-atomic="true"></div></dialog>
-<dialog id="catalogDialog"><div class="dialoghead"><h2>Search</h2><button class="close" id="closeCatalog" aria-label="Close">×</button></div><div class="catalog-body"><div class="catalog-search-wrap"><span class="catalog-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="27" height="27" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.6"/><path d="m16 16 5 5"/></svg></span><input class="input" id="catalogSearch" aria-label="Search sounds" placeholder="" autocomplete="off" autofocus></div><div id="catalogList"></div><p id="catalogStatus" class="status" aria-live="polite"></p></div></dialog><dialog id="deleteDialog" aria-labelledby="deleteTitle"><div class="confirm-body"><h2 id="deleteTitle">Delete sound?</h2><p id="deleteName"></p><div class="actions"><button class="secondary" id="cancelDelete">Cancel</button><button class="delete-confirm" id="confirmDelete">Delete</button></div></div></dialog><dialog id="renameDialog" aria-labelledby="renameTitle"><form id="renameForm"><h2 id="renameTitle">Rename sound</h2><label for="renameInput">Sound name</label><input class="input" id="renameInput" maxlength="80" required autocomplete="off" enterkeyhint="done"><p id="renameError" role="alert"></p><div class="actions"><button class="secondary" id="cancelRename" type="button">Cancel</button><button class="primary" id="saveRename" type="submit">Save</button></div></form></dialog><dialog id="settingsDialog"><div class="dialoghead"><h2>Settings</h2><button class="close" id="closeSettings" aria-label="Close">×</button></div><div style="padding:0 18px 18px"><details class="settings-help"><summary>Themes</summary><div class="theme-choices"><label><input type="radio" name="appTheme" value="streamdeck" checked> Sound Deck</label><label><input type="radio" name="appTheme" value="system"> System</label><label><input type="radio" name="appTheme" value="dark"> Dark</label><label><input type="radio" name="appTheme" value="light"> Light</label></div></details><details class="settings-help"><summary>How to use</summary><div class="help-content"><h4>Soundboard</h4><p>Tap a button to play. Tap again to stop. The note icon opens My Sounds.</p><h4>My Sounds</h4><p>Listen, assign, edit or delete.</p><h4>Add sounds</h4><p>Record, import or browse.</p><h4>Assignments</h4><p>Choose a sound, tap Assign, then select a button.</p></div></details><details class="settings-help"><summary>Privacy &amp; storage</summary><div class="help-content"><p>Recordings and downloads stay on this device. Clearing browser data can erase them.</p><p>Use Backup to save a copy. Microphone access is requested only when recording.</p></div></details><details class="settings-help"><summary>Sound licences</summary><div class="help-content"><p>Online sounds are public domain or CC0.</p></div></details><div class="settings-actions"><details class="settings-help"><summary>Backup and recovery</summary><div class="settings-backup-content"><button id="exportBackup" class="secondary">Backup recorded data</button><button id="importBackup" class="secondary">Restore backup</button><input type="file" id="backupFile" accept=".json,application/json" hidden></div></details><details class="settings-help"><summary>Reset</summary><div style="display:grid;gap:12px;padding:4px 0 16px"><label><input type="checkbox" id="resetClear"> Button assignments</label><label><input type="checkbox" id="resetImports"> Imported sounds</label><label><input type="checkbox" id="resetRecordings"> Recorded sounds</label><label><input type="checkbox" id="resetFactory"> Restore to factory settings</label><button id="resetSelected" class="danger">Reset selected</button></div></details></div></div></dialog>
+<dialog id="catalogDialog"><div class="dialoghead"><h2>Search</h2><button class="close" id="closeCatalog" aria-label="Close">×</button></div><div class="catalog-body"><div class="catalog-search-wrap"><span class="catalog-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="27" height="27" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.6"/><path d="m16 16 5 5"/></svg></span><input class="input" id="catalogSearch" aria-label="Search sounds" placeholder="" autocomplete="off" autofocus></div><div id="catalogList"></div><p id="catalogStatus" class="status" aria-live="polite"></p></div></dialog><dialog id="settingsDialog"><div class="dialoghead"><h2>Settings</h2><button class="close" id="closeSettings" aria-label="Close">×</button></div><div style="padding:0 18px 18px"><details class="settings-help"><summary>Themes</summary><div class="theme-choices"><label><input type="radio" name="appTheme" value="streamdeck" checked> Sound Deck</label><label><input type="radio" name="appTheme" value="system"> System</label><label><input type="radio" name="appTheme" value="dark"> Dark</label><label><input type="radio" name="appTheme" value="light"> Light</label></div></details><details class="settings-help"><summary>How to use</summary><div class="help-content"><h4>Soundboard</h4><p>Tap a button to play. Tap again to stop. The note icon opens My Sounds.</p><h4>My Sounds</h4><p>Listen, assign, edit or delete.</p><h4>Add sounds</h4><p>Record, import or browse.</p><h4>Assignments</h4><p>Choose a sound, tap Assign, then select a button.</p></div></details><details class="settings-help"><summary>Privacy &amp; storage</summary><div class="help-content"><p>Recordings and downloads stay on this device. Clearing browser data can erase them.</p><p>Use Backup to save a copy. Microphone access is requested only when recording.</p></div></details><details class="settings-help"><summary>Sound licences</summary><div class="help-content"><p>Online sounds are public domain or CC0.</p></div></details><div class="settings-actions"><details class="settings-help"><summary>Backup and recovery</summary><div class="settings-backup-content"><button id="exportBackup" class="secondary">Backup recorded data</button><button id="importBackup" class="secondary">Restore backup</button><input type="file" id="backupFile" accept=".json,application/json" hidden></div></details><details class="settings-help"><summary>Reset</summary><div style="display:grid;gap:12px;padding:4px 0 16px"><label><input type="checkbox" id="resetClear"> Button assignments</label><label><input type="checkbox" id="resetImports"> Imported sounds</label><label><input type="checkbox" id="resetRecordings"> Recorded sounds</label><label><input type="checkbox" id="resetFactory"> Restore to factory settings</label><button id="resetSelected" class="danger">Reset selected</button></div></details></div></div></dialog>
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
@@ -768,7 +768,7 @@ const builtinSounds=[
   "url": "audio/godzilla.mp3"
  }
 ];
-let recordSource=null;let editorOriginalBlob=null;let editorSavedBlob=null;let libraryMode=false;let soundNames={},renameTarget=null,soundOrder=[],deletedSounds=[],lastDeletion=null,deleteTarget=null,libraryBusy=false,editLoadToken=0;
+let recordSource=null;let editorOriginalBlob=null;let editorSavedBlob=null;let libraryMode=false;let soundNames={},soundOrder=[],deletedSounds=[],lastDeletion=null,libraryBusy=false,editLoadToken=0;
 let slots=Array.from({length:9},(_,i)=>({id:i,name:i===0?'Jeopardy':'Empty',soundId:i===0?'builtin-jeopardy':null})),sounds=[...builtinSounds],active=0,recorder=null,chunks=[],recordStream=null,recordBlob=null,recordName='',previewURL=null,playing=null,db;
 let request; try { request=indexedDB.open('rubber-soundboard-v1',1); } catch(e) { console.warn('Storage unavailable',e); }
 if(request) request.onupgradeneeded=()=>{const d=request.result;if(!d.objectStoreNames.contains('sounds'))d.createObjectStore('sounds',{keyPath:'id'});if(!d.objectStoreNames.contains('meta'))d.createObjectStore('meta')};
@@ -984,26 +984,6 @@ function nextRecordingName(){
  let n=1;while(sounds.some(sound=>sound.name==='Recording '+n))n++;
  return 'Recording '+n;
 }
-function makeTitleEditable(element,soundId,name){
- element.classList.add('editable-title');element.tabIndex=0;element.setAttribute('role','button');
- element.setAttribute('aria-label','Rename '+name);
- let start=null,moved=false,suppressClick=false;
- element.addEventListener('pointerdown',e=>{if(!e.isPrimary||e.button!==0)return;start={x:e.clientX,y:e.clientY,time:performance.now()};moved=false;suppressClick=false});
- element.addEventListener('pointermove',e=>{if(start&&Math.hypot(e.clientX-start.x,e.clientY-start.y)>10)moved=true});
- element.addEventListener('pointercancel',()=>{start=null;moved=true});
- element.addEventListener('pointerup',()=>{
-  if(start&&!moved&&performance.now()-start.time>=450){suppressClick=true;openRename(soundId)}
-  start=null;
- });
- element.addEventListener('click',e=>{e.stopPropagation();if(suppressClick){suppressClick=false;return}if(!moved)openRename(soundId)});
- element.addEventListener('contextmenu',e=>e.preventDefault());
- element.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openRename(soundId)}});
-}
-function openRename(id){
- const sound=sounds.find(s=>s.id===id);if(!sound)return;
- renameTarget=id;$('renameInput').value=sound.name;$('renameError').textContent='';
- $('renameDialog').showModal();$('renameInput').focus();$('renameInput').select();
-}
 // A sound name is a unique library key. Case, Unicode normalization, and
 // accidental repeated spaces must not create extra saved entries.
 function uniqueSoundNameKey(name){
@@ -1108,21 +1088,6 @@ async function consolidateDuplicateSoundNames(){
 
 $('draftName').oninput=()=>{recordName=$('draftName').value};
 $('draftName').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();e.target.blur()}};
-$('cancelRename').onclick=()=>{if(!$('saveRename').disabled)$('renameDialog').close()};
-$('renameDialog').addEventListener('cancel',e=>{if($('saveRename').disabled)e.preventDefault()});
-$('renameForm').onsubmit=async e=>{
- e.preventDefault();if($('saveRename').disabled)return;
- const name=$('renameInput').value.trim();
- if(!name){$('renameError').textContent='Enter a name.';$('renameInput').focus();return}
- const sound=sounds.find(s=>s.id===renameTarget);if(!sound)return;
- $('saveRename').disabled=true;$('cancelRename').disabled=true;
- try{
-  const saved=await saveNamedSound({...sound,name});
-  if(editedSoundId===sound.id){editedSoundId=saved.id;recordName=name;$('draftName').value=name}
-  render();renderLibrary();$('renameDialog').close();
- }catch(error){$('renameError').textContent='Unable to save: '+error.message}
- finally{$('saveRename').disabled=false;$('cancelRename').disabled=false}
-};
 function updateClearButton(){}
 function openEditor(i,browse=false){libraryMode=browse;$('editor').classList.toggle('library-mode',browse);editLoadToken++;active=i;recordBlob=null;recordName='';resetPreview();$('editTitle').textContent='My Sounds';$('recordStatus').textContent='';$('record').textContent='● Rec';renderLibrary();updateClearButton();$('editor').showModal()}
 
@@ -1674,11 +1639,13 @@ function attachSwipe(wrapper,row,remove){
 }
 $('removeEditedSound').onclick=()=>{if(editedSoundId)openDelete(editedSoundId)};
 function openDelete(id){
- if(libraryBusy)return;const sound=sounds.find(s=>s.id===id);if(!sound)return;
- deleteTarget=id;$('deleteName').textContent=sound.name;$('deleteDialog').showModal();
+ if(libraryBusy)return;
+ const sound=sounds.find(s=>s.id===id);
+ if(!sound)return;
+ // Native browser/iOS confirmation, consistent with Reset and backup alerts.
+ if(!confirm('Delete “'+sound.name+'”?'))return;
+ void deleteConfirmedSound(id);
 }
-$('cancelDelete').onclick=()=>{if(!libraryBusy)$('deleteDialog').close()};
-$('deleteDialog').addEventListener('cancel',e=>{if(libraryBusy)e.preventDefault()});
 function persistLibraryState(nextSlots,nextDeleted,nextUndo,nextOrder=soundOrder){
  return new Promise((resolve,reject)=>{
   const tx=db.transaction('meta','readwrite'),meta=tx.objectStore('meta');
@@ -1686,20 +1653,27 @@ function persistLibraryState(nextSlots,nextDeleted,nextUndo,nextOrder=soundOrder
   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
  });
 }
-$('confirmDelete').onclick=async()=>{
- if(libraryBusy)return;const sound=sounds.find(s=>s.id===deleteTarget);if(!sound)return;
- libraryBusy=true;$('confirmDelete').disabled=true;
+async function deleteConfirmedSound(id){
+ if(libraryBusy)return;
+ const sound=sounds.find(s=>s.id===id);
+ if(!sound)return;
+ libraryBusy=true;
  try{
   const undo={id:sound.id,index:sounds.indexOf(sound),slots:slots.filter(s=>s.soundId===sound.id)};
-  const nextDeleted=[...new Set([...deletedSounds,sound.id])],nextSlots=slots.map(s=>s.soundId===sound.id?{id:s.id,name:'Empty',soundId:null}:s);
+  const nextDeleted=[...new Set([...deletedSounds,sound.id])];
+  const nextSlots=slots.map(s=>s.soundId===sound.id?{id:s.id,name:'Empty',soundId:null}:s);
   await persistLibraryState(nextSlots,nextDeleted,undo);
   if(playing?.soundId===sound.id)stopPlayback();
   if(editedSoundId===sound.id){editLoadToken++;resetPreview();recordBlob=null;recordName='';$('recordStatus').textContent='Sound removed.'}
-  sounds=sounds.filter(s=>s.id!==sound.id);slots=nextSlots;deletedSounds=nextDeleted;lastDeletion=undo;
-  $('deleteDialog').close();render();renderLibrary();updateClearButton();
- }catch(e){$('recordStatus').textContent='Unable to delete: '+e.message;$('deleteDialog').close()}
- finally{libraryBusy=false;$('confirmDelete').disabled=false}
-};
+  sounds=sounds.filter(s=>s.id!==sound.id);
+  slots=nextSlots;deletedSounds=nextDeleted;lastDeletion=undo;
+  render();renderLibrary();updateClearButton();
+ }catch(e){
+  alert('Unable to delete: '+e.message);
+ }finally{
+  libraryBusy=false;
+ }
+}
 $('undoDelete').onclick=async()=>{
  if(libraryBusy||!lastDeletion)return;libraryBusy=true;
  try{
