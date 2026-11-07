@@ -695,11 +695,18 @@ async function searchCommons(q,target){
     const n=p.title.replace(/^File:/,'').replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').toLowerCase();
     const words=n.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
     let v=0;
-    if(n===q)v+=1000;
-    if(n.startsWith(q+' '))v+=500;
-    if(words.includes(q))v+=300;
-    if(n.includes(q))v+=120;
-    for(const term of terms){if(words.includes(term))v+=70;else if(n.includes(term))v+=20}
+    // Sound effects are the primary intent; spoken words, songs and performances rank lower.
+    const effects=/\b(sound effects?|sfx|sounds?|calls?|roars?|roaring|growls?|growling|quacks?|quacking|barks?|barking|meows?|chirps?|chirping|howls?|screams?|snorts?|hisses?|animal|wildlife|field recording|nature|ambien(?:ce|t)|foley|recording)\b/i;
+    const speech=/\b(spoken|speaking|speech|pronunciation|pronouncing|word|words|language|translation|vocabulary|dictionary|reading|narration|voiceover|tts|text to speech|saying|says|said|interview|conversation)\b/i;
+    const music=/\b(song|music|musical|dance|percussion|piano|concert|band|instrumental|anthem|melody|remix|cover|karaoke|hymn)\b/i;
+    if(effects.test(n))v+=280;
+    if(speech.test(n))v-=550;
+    if(music.test(n))v-=230;
+    if(n===q)v+=100;
+    if(n.startsWith(q+' '))v+=100;
+    if(words.includes(q))v+=180;
+    if(n.includes(q))v+=90;
+    for(const term of terms){if(words.includes(term))v+=60;else if(n.includes(term))v+=15}
     v-=Math.min(n.length,150)/10;
     return v;
    };
