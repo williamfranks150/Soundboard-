@@ -685,11 +685,11 @@ async function searchCommons(q,target){
  const sequence=++commonsSearchSequence;
  if(!q){target.textContent='Search the online sound library.';return}
  try{
-  const api='https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch='+encodeURIComponent(q+' filetype:audio')+'&gsrnamespace=6&gsrlimit=20&prop=imageinfo&iiprop=url%7Cextmetadata&format=json&origin=*';
+  const api='https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch='+encodeURIComponent(q+' filetype:audio')+'&gsrnamespace=6&gsrlimit=50&gsrsort=relevance&prop=imageinfo&iiprop=url%7Cextmetadata&format=json&origin=*';
   const response=await fetch(api);if(!response.ok)throw Error('Search unavailable');
   const data=await response.json();if(sequence!==commonsSearchSequence||$('catalogSearch').value.trim().toLowerCase()!==q)return;
   target.replaceChildren();let count=0;
-  for(const page of Object.values(data.query?.pages||{})){
+  const terms=q.split(/\s+/).filter(Boolean);\n  const ranked=Object.values(data.query?.pages||{}).sort((a,b)=>{\n   const score=p=>{const n=p.title.replace(/^File:/,'').replace(/\\.[^.]+$/,'').replace(/[_-]+/g,' ').toLowerCase();const words=n.split(/[^\\p{L}\\p{N}]+/u).filter(Boolean);let v=0;if(n===q)v+=1000;if(n.startsWith(q+' '))v+=500;if(words.includes(q))v+=300;if(n.includes(q))v+=120;for(const term of terms){if(words.includes(term))v+=70;else if(n.includes(term))v+=20}v-=Math.min(n.length,150)/10;return v};return score(b)-score(a)||((a.index??999)-(b.index??999))};\n  for(const page of ranked){
    const info=page.imageinfo?.[0],meta=info?.extmetadata||{};
    const license=(meta.LicenseShortName?.value||'').replace(/<[^>]+>/g,'');
    if(!/^(CC0(?: |$)|Public domain(?: |$)|Public Domain Mark(?: |$)|PDM(?: |$))/i.test(license)||!info.url||!/^https:\/\/upload\.wikimedia\.org\//.test(info.url)||!/\.(ogg|oga|mp3|wav|flac)(?:\?|$)/i.test(info.url))continue;
@@ -723,9 +723,9 @@ function renderCatalog(){
  commonsSearchSequence++;
  if(q)searchCommons(q,target);
 }
-$('browseSounds').onclick=()=>{$('catalogSearch').value='';$('catalogStatus').textContent='';renderCatalog();$('catalogDialog').showModal()};
+$('browseSounds').onclick=()=>{$('catalogDialog').showModal()};
 $('closeCatalog').onclick=()=>{$('catalogDialog').close()};
-$('catalogDialog').addEventListener('close',()=>{if(catalogPreview){catalogPreview.pause();catalogPreview=null}});
+$('catalogDialog').addEventListener('close',()=>{if(catalogPreview){catalogPreview.pause();catalogPreview.currentTime=0;catalogPreview=null}document.querySelectorAll('#catalogList button').forEach(b=>{if(b._audio)b.textContent='Play'})});
 $('catalogSearch').oninput=renderCatalog;
 function renderLibrary(){
  const target=$('library');target.replaceChildren();
