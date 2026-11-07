@@ -599,17 +599,25 @@ body[data-theme="light"] #library .library-item .sound-actions .sound-edit{
  display:flex;
  align-items:center;
  justify-content:flex-end;
+ gap:10px;
  width:100%;
- border-top:1px solid var(--editor-divider,#54677e);
- margin:8px 0 0;
- padding:8px 0 0;
- min-height:42px;
+ border:0;
+ margin:2px 0 0;
+ padding:0;
+ min-height:44px;
+}
+#editor #editAreaTop::before{
+ content:"";
+ display:block;
+ flex:1 1 auto;
+ height:1px;
+ background:var(--editor-divider,#54677e);
 }
 #editor #editAreaTop #backToSounds:not(.hidden){
  display:flex!important;
  align-items:center;
  justify-content:center;
- align-self:flex-end;
+ align-self:center;
  flex:0 0 44px;
  width:44px!important;
  height:44px!important;
