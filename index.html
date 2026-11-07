@@ -901,6 +901,14 @@ async function searchCommons(q,target){
   const isMusicRequest=/\b(song|music|musical|dance|piano|concert|band|instrument|melody|remix|theme|jingle|guitar|drum|beat)\b/i.test(q);
   const score=p=>{
    const name=normalize(p.title);
+   const rawTitle=p.title.replace(/^File:/i,'').replace(/\.[^.]+$/,'');
+   const unparenthesized=normalize(rawTitle.replace(/\([^)]*\)/g,' '));
+   // An English search term appearing only as a translation in parentheses
+   // does not describe the actual recorded sound (e.g. "Kcg za (rain)").
+   const hasMainTitleMatch=searched.some(phrase=>phrase&&
+    (' '+unparenthesized+' ').includes(' '+phrase+' '));
+   if(!hasMainTitleMatch)return -Infinity;
+   if(/\b(translat(?:e|ed|ion|ions)|dictionary|pronunciation|vocabulary|word list|language lesson|linguistic|spoken words|text to speech|ipa)\b/i.test(name))return -Infinity;
    const words=name.split(' ').filter(Boolean);
    const phraseMatches=searched.filter(phrase=>phrase&&(' '+name+' ').includes(' '+phrase+' '));
    const termMatches=terms.filter(term=>words.includes(term));
