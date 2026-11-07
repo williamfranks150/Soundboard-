@@ -768,7 +768,7 @@ const builtinSounds=[
   "url": "audio/godzilla.mp3"
  }
 ];
-let recordSource=null;let editorOriginalBlob=null;let libraryMode=false;let soundNames={},renameTarget=null,soundOrder=[],deletedSounds=[],lastDeletion=null,deleteTarget=null,libraryBusy=false,editLoadToken=0;
+let recordSource=null;let editorOriginalBlob=null;let editorSavedBlob=null;let libraryMode=false;let soundNames={},renameTarget=null,soundOrder=[],deletedSounds=[],lastDeletion=null,deleteTarget=null,libraryBusy=false,editLoadToken=0;
 let slots=Array.from({length:9},(_,i)=>({id:i,name:i===0?'Jeopardy':'Empty',soundId:i===0?'builtin-jeopardy':null})),sounds=[...builtinSounds],active=0,recorder=null,chunks=[],recordStream=null,recordBlob=null,recordName='',previewURL=null,playing=null,db;
 let request; try { request=indexedDB.open('rubber-soundboard-v1',1); } catch(e) { console.warn('Storage unavailable',e); }
 if(request) request.onupgradeneeded=()=>{const d=request.result;if(!d.objectStoreNames.contains('sounds'))d.createObjectStore('sounds',{keyPath:'id'});if(!d.objectStoreNames.contains('meta'))d.createObjectStore('meta')};
@@ -1138,7 +1138,7 @@ function stopDraftPreview(){
  previewURL=null;updatePreviewButton();
 }
 function resetPreview(){
- trimGeneration++;stopDraftPreview();trimBuffer=null;trimStart=0;trimEnd=0;trimLoading=false;editedSoundId=null;editorOriginalBlob=null;$('backToSounds').classList.add('hidden');$('editAreaTop').classList.add('hidden');$('editAreaBottom').classList.add('hidden');$('removeEditedSound').classList.add('hidden');
+ trimGeneration++;stopDraftPreview();trimBuffer=null;trimStart=0;trimEnd=0;trimLoading=false;editedSoundId=null;editorOriginalBlob=null;editorSavedBlob=null;$('backToSounds').classList.add('hidden');$('editAreaTop').classList.add('hidden');$('editAreaBottom').classList.add('hidden');$('removeEditedSound').classList.add('hidden');
  $('draftNameGroup').classList.add('hidden');$('draftName').value='';$('save').textContent=libraryMode?'Save sound':'Use sound';
  $('trimPanel').classList.add('hidden');$('playPreview').classList.add('hidden');$('save').classList.add('hidden');$('save').disabled=false;$('playPreview').disabled=false;
 }
@@ -1154,8 +1154,8 @@ function syncTrimControls(){
  if(document.activeElement!==$('trimEndTime'))$('trimEndTime').value=trimEnd.toFixed(2);
  $('trimDuration').textContent='· '+(trimEnd-trimStart).toFixed(2)+' s';
 }
-async function setPreview(blob,soundId=null,sourceBlob=blob){
- resetPreview();editorOriginalBlob=sourceBlob;stopPlayback();$('playPreview').classList.remove('hidden');$('save').classList.remove('hidden');editedSoundId=soundId;$('editAreaTop').classList.remove('hidden');$('editAreaBottom').classList.remove('hidden');$('backToSounds').classList.toggle('hidden',!soundId);$('removeEditedSound').classList.toggle('hidden',!soundId);$('save').textContent=soundId?'Save changes':(libraryMode?'Save sound':'Use sound');
+async function setPreview(blob,soundId=null,sourceBlob=blob,savedBlob=blob){
+ resetPreview();editorOriginalBlob=sourceBlob;editorSavedBlob=savedBlob;stopPlayback();$('playPreview').classList.remove('hidden');$('save').classList.remove('hidden');editedSoundId=soundId;$('editAreaTop').classList.remove('hidden');$('editAreaBottom').classList.remove('hidden');$('backToSounds').classList.toggle('hidden',!soundId);$('removeEditedSound').classList.toggle('hidden',!soundId);$('save').textContent=soundId?'Save changes':(libraryMode?'Save sound':'Use sound');
  $('draftName').value=recordName;$('draftNameGroup').classList.remove('hidden');
  const generation=trimGeneration;
  trimLoading=true;$('save').disabled=true;$('playPreview').disabled=true;
@@ -1211,24 +1211,65 @@ $('trimEnd').oninput=e=>changeTrim('end',Number(e.target.value));
 $('trimStartTime').oninput=$('trimStartTime').onchange=e=>changeTrim('start',e.target.value===''?NaN:Number(e.target.value));
 $('trimEndTime').oninput=$('trimEndTime').onchange=e=>changeTrim('end',e.target.value===''?NaN:Number(e.target.value));
 $('trimStartTime').onblur=$('trimEndTime').onblur=()=>{if(trimBuffer)syncTrimControls()};
+// Reset first discards unsaved trim adjustments. If the saved version is
+// already fully selected, offer the longer original recording separately.
+function trimResetAction(start,end,duration,isSavedVersion){
+ const hasUnsavedTrim=Math.abs(start)>0.005||Math.abs(end-duration)>0.005;
+ return hasUnsavedTrim||!isSavedVersion?'saved':'check-original';
+}
+async function audioBlobDuration(blob){
+ const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+ if(!AudioContextClass)throw Error('Audio decoding unavailable.');
+ const context=new AudioContextClass();
+ try{
+  const buffer=await context.decodeAudioData(await blob.arrayBuffer());
+  return buffer.duration;
+ }finally{
+  context.close().catch(()=>{});
+ }
+}
 $('resetTrim').onclick=async()=>{
- const original=editorOriginalBlob;
- if(!original||trimLoading)return;
+ if(!trimBuffer||trimLoading||!recordBlob)return;
+ const saved=editorSavedBlob||recordBlob;
+ const original=editorOriginalBlob||saved;
+ const soundId=editedSoundId;
+ const action=trimResetAction(trimStart,trimEnd,trimBuffer.duration,recordBlob===saved);
  stopDraftPreview();
- if(original!==recordBlob){
-  const previous=recordBlob;
-  const soundId=editedSoundId;
-  recordBlob=original;
-  try{
-   await setPreview(original,soundId,original);
-   if(!trimBuffer)throw Error('Original audio could not be decoded.');
-   $('recordStatus').textContent='';
-  }catch(error){
-   recordBlob=previous;
-   $('recordStatus').textContent='Unable to restore original audio.';
+ if(action==='saved'){
+  // If we temporarily switched to the original, switch back to the last save.
+  if(recordBlob!==saved){
+   recordBlob=saved;
+   try{
+    await setPreview(saved,soundId,original,saved);
+    if(!trimBuffer)throw Error('Saved audio unavailable.');
+    $('recordStatus').textContent='';
+   }catch(error){
+    $('recordStatus').textContent='Unable to restore last saved trim.';
+   }
+  }else{
+   trimStart=0;trimEnd=trimBuffer.duration;syncTrimControls();
   }
- }else if(trimBuffer){
-  trimStart=0;trimEnd=trimBuffer.duration;syncTrimControls();
+  return;
+ }
+ if(original===saved)return; // Already at the full original.
+ const button=$('resetTrim');
+ button.disabled=true;
+ try{
+  const originalDuration=await audioBlobDuration(original);
+  if(!trimBuffer||editedSoundId!==soundId||recordBlob!==saved)return;
+  // Do not offer an irrelevant reset when both recordings are the same length.
+  if(originalDuration<=trimBuffer.duration+0.04)return;
+  if(!confirm('Restore the full original recording?'))return;
+  recordBlob=original;
+  await setPreview(original,soundId,original,saved);
+  if(!trimBuffer)throw Error('Original audio unavailable.');
+  $('recordStatus').textContent='';
+ }catch(error){
+  // Stay with the last saved recording on restoration errors.
+  recordBlob=saved;
+  $('recordStatus').textContent='Unable to restore original recording.';
+ }finally{
+  button.disabled=false;
  }
 };
 $('preview').onplay=updatePreviewButton;$('preview').onpause=updatePreviewButton;
@@ -1598,7 +1639,7 @@ async function editSound(id){
    }catch(e){console.warn('Original bundled recording unavailable',e)}
   }
   if(token!==editLoadToken||!$('editor').open)return;
-  recordBlob=blob;recordName=sound.name;await setPreview(blob,id,sourceBlob);
+  recordBlob=blob;recordName=sound.name;await setPreview(blob,id,sourceBlob,blob);
   if(token===editLoadToken&&$('editor').open&&trimBuffer)$('recordStatus').textContent='';
  }catch(e){
   if(token===editLoadToken){resetPreview();$('recordStatus').textContent='Unable to edit: '+e.message}
