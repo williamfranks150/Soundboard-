@@ -309,7 +309,7 @@ body[data-theme="streamdeck"] .name{color:#e6eefb}
 'use strict';
 const $=id=>document.getElementById(id);
 const themeColors={dark:['#3db9b1','#567bc8','#a768ba','#e0a453','#d76f88','#55a7c7','#77ae80','#c080c1','#cf8357'],light:['#ffb96b','#f58c9e','#79d4bb','#80b7f0','#c9a0f3','#f3d36e','#78d6dd','#f2a5c9','#b9d47b']};
-let selectedTheme='dark';try{selectedTheme=['dark','light','streamdeck'].includes(localStorage.getItem('set-sounds-theme'))?localStorage.getItem('set-sounds-theme'):'dark'}catch(e){}
+let selectedTheme='streamdeck';try{const saved=localStorage.getItem('set-sounds-theme');if(['dark','light','streamdeck'].includes(saved))selectedTheme=saved}catch(e){}
 let colors=themeColors[selectedTheme];
 function applyTheme(theme){selectedTheme=['dark','light','streamdeck'].includes(theme)?theme:'dark';colors=themeColors[selectedTheme==='light'?'light':'dark'];document.body.dataset.theme=selectedTheme;document.querySelector('meta[name="theme-color"]').content=selectedTheme==='light'?'#fdf1e8':'#10141e';try{localStorage.setItem('set-sounds-theme',selectedTheme)}catch(e){}document.querySelectorAll('input[name="appTheme"]').forEach(input=>input.checked=input.value===selectedTheme);render()}
 const builtinSounds=[
