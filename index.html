@@ -941,118 +941,111 @@ async function catalogFileUrl(file){
  return url;
 }
 let commonsSearchSequence=0;
+
+const soundSearchAliases={
+ cry:['crying','sobbing','weeping','crying baby','baby crying'],
+ crying:['cry','sobbing','weeping','crying baby','baby crying'],
+ creek:['stream','brook','babbling brook'],stream:['creek','brook','flowing water'],
+ brook:['creek','stream','babbling brook'],river:['stream','flowing water'],
+ rain:['rainfall','raindrops','raining'],ocean:['waves','surf','ocean waves'],
+ sea:['waves','surf','ocean waves'],lion:['lion roar','roaring lion','lion roaring'],
+ duck:['quack','quacking','duck quacking'],dog:['barking','dog bark','barking dog'],
+ cat:['meowing','meow','cat meow'],bird:['birdsong','chirping','bird chirping'],
+ frog:['croaking','frog croak'],horse:['neighing','horse neigh'],
+ cow:['moo','mooing'],applause:['clapping','audience applause'],
+ laugh:['laughter','laughing','giggle'],cricket:['crickets','chirping'],
+ crickets:['cricket','chirping'],elephant:['elephant trumpeting','elephant trumpet'],
+ monkey:['monkey chatter','monkey call'],wolf:['howling wolf','wolf howl'],
+ thunder:['thunderclap','thunderstorm'],scream:['screaming','shriek'],
+ clap:['clapping','applause'],bell:['ringing bell','bell ringing']
+};
+function soundSearchNormalize(value){
+ return String(value||'').toLowerCase().replace(/^file:/,'').replace(/\.[^.]+$/,'')
+  .replace(/[_-]+/g,' ').replace(/[^\p{L}\p{N}]+/gu,' ')
+  .replace(/\s+/g,' ').trim();
+}
+function soundSearchRelevance(page,query,aliases){
+ const filename=String(page.title||'').replace(/^File:/i,'').replace(/\.[^.]+$/,'');
+ const separated=filename.replace(/[_-]+/g,' ').trim();
+ // Wiktionary pronunciation filenames and language-lesson clips are not effects.
+ if(/^(?:en(?: (?:us|uk|gb|au|ca))?|fr|de|es|pt|it|ru|ja|zh|hi|ar|nl|ko|pl|sv|fi|da|no|tr|vi|id|bn|ta|te|pa|kcg)(?:\s|$)/i.test(separated)
+  ||/^LL[ _-]Q\d+/i.test(filename)
+  ||/\p{L}/u.test(separated.replace(/\p{Script=Latin}/gu,'')))return -Infinity;
+ // Avoid hits where the requested word is just a translated gloss in parentheses.
+ const name=soundSearchNormalize(filename.replace(/\([^)]*\)/g,' '));
+ const matches=aliases.filter(term=>(' '+name+' ').includes(' '+term+' '));
+ if(!matches.length)return -Infinity;
+ if(/\b(wiktionary|pronunciation|pronouncing|dictionary|language lesson|vocabulary|translation|translated|tts|text to speech|speech synthesis|audiobook|audio book|librivox|chapter|poetry reading|lecture|interview|sermon|podcast|narration|spoken word|word recording)\b/i.test(name))return -Infinity;
+ if(/\b(occurrence at owl creek bridge|owl creek bridge|ambrose bierce)\b/i.test(name))return -Infinity;
+ if(query==='elephant'&&/\b(garlic|plant|flower|grass|ear|seal|foot|stone)\b/i.test(name))return -Infinity;
+ const musicWanted=/\b(song|music|dance|piano|concert|band|guitar|drum|melody|theme|jingle|beat)\b/i.test(query);
+ const quote=/\b(movie|film|tv|television|quote|quotes|catchphrase|dialogue|dialog|scene|soundbite|comedy|meme)\b/i.test(name);
+ if(!musicWanted&&!quote&&/\b(song|music|musical|dance|piano|concert|band|anthem|remix|cover|karaoke|hymn)\b/i.test(name))return -Infinity;
+ const effects=/\b(sound|sounds|effect|effects|sfx|recording|foley|nature|animal|wildlife|ambience|ambient|roar|roaring|trumpeting|quack|quacking|bark|barking|meow|meowing|chirp|chirping|howl|howling|crying|sobbing|weeping|screaming|rainfall|thunder|splash|splashing|water|waves|babbling|clapping|applause)\b/i;
+ let score=matches.includes(query)?450:250;
+ if(name===query)score+=300;
+ if(name.startsWith(query+' '))score+=130;
+ if(effects.test(name))score+=200;
+ if(quote&&query.includes(' '))score+=140;
+ score+=matches.length*15;
+ score-=Math.min(name.length,150)/10;
+ return score;
+}
+function soundSearchDuration(info){
+ const items=[...(info?.metadata||[]),...(info?.commonmetadata||[])];
+ const entry=items.find(item=>/^(length|duration|playtime)$/i.test(item.name||''));
+ const raw=String(entry?.value??info?.extmetadata?.Duration?.value??'').replace(/<[^>]+>/g,'').trim().toLowerCase();
+ if(!raw)return null;
+ if(/^\d+(?::\d{1,2}){1,2}(?:\.\d+)?$/.test(raw)){
+  return raw.split(':').map(Number).reduce((n,v)=>n*60+v,0);
+ }
+ if(/^\d+(?:\.\d+)?$/.test(raw))return Number(raw);
+ // Wikimedia file metadata is not consistently formatted across audio types.
+ const hour=raw.match(/([\d.]+)\s*(?:hours?|hrs?|h)\b/);
+ const minute=raw.match(/([\d.]+)\s*(?:minutes?|mins?|min|m)\b/);
+ const second=raw.match(/([\d.]+)\s*(?:seconds?|secs?|sec|s)\b/);
+ if(hour||minute||second)return (hour?+hour[1]*3600:0)+(minute?+minute[1]*60:0)+(second?+second[1]:0);
+ return null;
+}
 async function searchCommons(q,target){
  const sequence=++commonsSearchSequence;
- if(!q){target.textContent='Search the online sound library.';return}
+ if(!q){target.replaceChildren();return}
  try{
-  // Query sound-related alternatives when a sound is commonly named another way.
-  const soundAliases={
-   creek:['stream','brook'],stream:['creek','brook'],brook:['creek','stream'],
-   river:['stream','flowing water'],rain:['rainfall','rain drops'],
-   ocean:['waves','surf'],sea:['waves','surf'],
-   lion:['lion roar','roaring lion'],duck:['duck quack','quacking'],
-   dog:['barking dog','dog bark'],cat:['cat meow','meowing'],
-   bird:['birdsong','chirping'],frog:['frog croak','croaking'],
-   horse:['horse neigh','neighing'],cow:['cow moo','mooing'],
-   applause:['clapping','audience applause'],laugh:['laughter','laughing'],
-   cricket:['crickets','chirping'],crickets:['cricket','insects'],
-   elephant:['elephant trumpeting','elephant sound'],
-   monkey:['monkey call','monkey chatter'],wolf:['wolf howl','howling wolf']
-  };
-  const alternatives=[q,...(soundAliases[q]||[])];
-  const queries=[...new Set(alternatives)].slice(0,3);
-  const responses=await Promise.allSettled(queries.map(async term=>{
+  const aliases=[...new Set([q,...(soundSearchAliases[q]||[])].map(soundSearchNormalize))].filter(Boolean);
+  const terms=[q,...(soundSearchAliases[q]||[])].slice(0,3);
+  const responses=await Promise.allSettled(terms.map(async term=>{
    const api='https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch='+
-    encodeURIComponent(term+' filetype:audio')+
-    '&gsrnamespace=6&gsrlimit=35&gsrsort=relevance&prop=imageinfo&iiprop=url%7Cextmetadata%7Cmetadata&format=json&origin=*';
+     encodeURIComponent(term+' filetype:audio')+
+     '&gsrnamespace=6&gsrlimit=35&gsrsort=relevance&prop=imageinfo&iiprop=url%7Cextmetadata%7Cmetadata%7Ccommonmetadata&format=json&origin=*';
    const response=await fetch(api);
    if(!response.ok)throw Error('Search unavailable');
    return response.json();
   }));
   if(sequence!==commonsSearchSequence||$('catalogSearch').value.trim().toLowerCase()!==q)return;
-  if(responses.every(result=>result.status==='rejected'))throw Error('Search unavailable');
+  if(responses.every(item=>item.status==='rejected'))throw Error('Search unavailable');
   const pages=new Map();
-  responses.forEach(result=>{
-   if(result.status!=='fulfilled')return;
-   for(const page of Object.values(result.value.query?.pages||{})){
-    if(!pages.has(page.pageid))pages.set(page.pageid,page);
-   }
-  });
-  target.replaceChildren();let count=0;
-  const terms=q.split(/\s+/).filter(Boolean);
-  const specificPhrase=terms.length>=2;
-  const normalize=value=>value.toLowerCase().replace(/^file:/,'').replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').replace(/[^\p{L}\p{N}]+/gu,' ').replace(/\s+/g,' ').trim();
-  const searched=alternatives.map(normalize);
-  const soundIndicators=/\b(sound effects?|sfx|sounds?|calls?|roars?|roaring|growls?|growling|quacks?|quacking|barks?|barking|meows?|meowing|chirps?|chirping|howls?|screams?|snorts?|hisses?|animal|wildlife|field recording|nature|ambient|ambience|foley|running water|flowing water|babbling|splashing|rainfall)\b/i;
-  const speechIndicators=/\b(spoken|speaking|speech|pronunciation|pronouncing|language|translation|vocabulary|dictionary|reading|narration|voiceover|tts|text to speech|saying|interview|conversation|audiobook|poetry|poem|lecture|avk)\b/i;
-  const musicIndicators=/\b(song|music|musical|dance|percussion|piano|concert|band|instrumental|anthem|melody|remix|cover|karaoke|hymn)\b/i;
-  const quoteIndicators=/\b(movie|film|tv|television|quote|quotes|catchphrase|dialogue|dialog|scene|soundbite|sound bite|character|comedy|meme)\b/i;
-  const isMusicRequest=/\b(song|music|musical|dance|piano|concert|band|instrument|melody|remix|theme|jingle|guitar|drum|beat)\b/i.test(q);
-  const score=p=>{
-   const name=normalize(p.title);
-   const rawTitle=p.title.replace(/^File:/i,'').replace(/\.[^.]+$/,'');
-   // Commons contains large collections of spoken dictionary entries named
-   // "En-us-elephant", "En-elephant-garlic", etc. They are not sound effects.
-   const filename=rawTitle.replace(/[_-]+/g,' ').trim();
-   const languagePrefix=/^(?:en(?: (?:us|uk|gb|au|ca))?|fr|de|es|pt|it|ru|ja|zh|hi|ar|nl|ko|pl|sv|fi|da|no|tr|vi|id|bn|ta|te|pa|kcg)(?:\s|$)/i;
-   if(languagePrefix.test(filename)||/^LL[ _-]Q\d+/i.test(rawTitle))return -Infinity;
-   // Permit accented Latin names, but reject non-Latin foreign-language titles.
-   if(/\p{L}/u.test(filename.replace(/\p{Script=Latin}/gu,'')))return -Infinity;
-   const unparenthesized=normalize(rawTitle.replace(/\([^)]*\)/g,' '));
-   // An English search term appearing only as a translation in parentheses
-   // does not describe the actual recorded sound (e.g. "Kcg za (rain)").
-   const hasMainTitleMatch=searched.some(phrase=>phrase&&
-    (' '+unparenthesized+' ').includes(' '+phrase+' '));
-   if(!hasMainTitleMatch)return -Infinity;
-   if(/\b(translat(?:e|ed|ion|ions)|dictionary|pronunciation|vocabulary|word list|language lesson|linguistic|spoken words|text to speech|ipa)\b/i.test(name))return -Infinity;
-   const words=name.split(' ').filter(Boolean);
-   const phraseMatches=searched.filter(phrase=>phrase&&(' '+name+' ').includes(' '+phrase+' '));
-   const termMatches=terms.filter(term=>words.includes(term));
-   if(!phraseMatches.length&&termMatches.length!==terms.length)return -Infinity;
-   const quote=quoteIndicators.test(name);
-   // Do not present a reading, foreign-language vocabulary or a film title
-   // as if it were a recording of the requested sound.
-   if(speechIndicators.test(name)&&!quote)return -Infinity;
-   if(/\b(occurrence at owl creek bridge|owl creek bridge|ambrose bierce)\b/i.test(name))return -Infinity;
-   // Disambiguate homonymous titles such as "elephant garlic", which are
-   // unrelated to the sounds of the animal named in the query.
-   if(q==='elephant'&&/\b(garlic|plant|flower|grass|ear|seal|foot|stone)\b/i.test(name))return -Infinity;
-   if(!isMusicRequest&&musicIndicators.test(name)&&!quote)return -Infinity;
-   let value=0;
-   if(name===q)value+=500;
-   if(name.startsWith(q+' '))value+=220;
-   if((' '+name+' ').includes(' '+q+' '))value+=220;
-   if(soundIndicators.test(name))value+=340;
-   if(quote&&specificPhrase)value+=360;
-   if(quote&&!specificPhrase)value+=30;
-   for(const phrase of phraseMatches)value+=phrase===q?170:130;
-   for(const term of termMatches)value+=50;
-   value-=Math.min(name.length,160)/8;
-   return value;
-  };
-  const ranked=[...pages.values()].map(page=>({page,rank:score(page)}))
-   .filter(item=>Number.isFinite(item.rank)&&item.rank>0)
-   .sort((a,b)=>b.rank-a.rank||(a.page.index??999)-(b.page.index??999));
+  for(const item of responses){
+   if(item.status!=='fulfilled')continue;
+   for(const page of Object.values(item.value.query?.pages||{}))pages.set(page.pageid,page);
+  }
+  const ranked=[...pages.values()].map(page=>({page,score:soundSearchRelevance(page,q,aliases)}))
+   .filter(item=>Number.isFinite(item.score)&&item.score>0)
+   .sort((a,b)=>b.score-a.score||(a.page.index??999)-(b.page.index??999));
+  target.replaceChildren();
+  let count=0;
   for(const {page} of ranked){
+   if(sequence!==commonsSearchSequence)return;
    const info=page.imageinfo?.[0],meta=info?.extmetadata||{};
-   // Commons includes clip length in the file metadata (seconds). Reject
-   // unknown durations as well as long recordings, rather than risk
-   // surfacing audiobooks or entire performances in a short-sound search.
-   const durationItem=(info?.metadata||[]).find(item=>/^(length|duration)$/i.test(item.name||''));
-   const rawDuration=String(durationItem?.value??'').trim();
-   let duration=Number(rawDuration);
-   if(rawDuration.includes(':')){
-    const parts=rawDuration.split(':').map(Number);
-    duration=parts.every(Number.isFinite)?parts.reduce((total,part)=>total*60+part,0):NaN;
-   }
-   if(!rawDuration||!Number.isFinite(duration)||duration<=0||duration>20)continue;
-   const license=(meta.LicenseShortName?.value||'').replace(/<[^>]+>/g,'');
-   if(!/^(CC0(?: |$)|Public domain(?: |$)|Public Domain Mark(?: |$)|PDM(?: |$))/i.test(license)||!info.url||!/^https:\/\/upload\.wikimedia\.org\//.test(info.url)||!/\.(ogg|oga|mp3|wav|flac)(?:\?|$)/i.test(info.url))continue;
+   const duration=soundSearchDuration(info);
+   // Longer environmental clips are fine; full-length books/programs are not.
+   if(duration!==null&&duration>=1800)continue;
+   const license=String(meta.LicenseShortName?.value||'').replace(/<[^>]+>/g,'');
+   if(!/^(CC0(?: |$)|Public domain(?: |$)|Public Domain Mark(?: |$)|PDM(?: |$))/i.test(license)
+     ||!info?.url||!/^https:\/\/upload\.wikimedia\.org\//.test(info.url)
+     ||!/\.(ogg|oga|mp3|wav|flac)(?:\?|$)/i.test(info.url))continue;
    const description=String(meta.ImageDescription?.value||'')
     .replace(/<[^>]*>/g,' ').replace(/&[^;]+;/g,' ').toLowerCase();
-   // Reject explicit pronunciation, vocabulary and translation recordings,
-   // even if Commons has given the audio file an English display title.
-   if(/\b(wiktionary|pronunciation|dictionary|language lesson|vocabulary|translation|word recording|spoken word|spoken pronunciation|text.to.speech)\b/i.test(description))continue;
+   if(/\b(wiktionary|pronunciation|dictionary|language lesson|vocabulary|translation|word recording|spoken word|librivox|audiobook|audio book|chapter reading|poetry reading|lecture|podcast|sermon|full audiobook)\b/i.test(description))continue;
    const name=page.title.replace(/^File:/,'').replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').trim();
    const row=document.createElement('div');row.className='catalog-result';
    const label=document.createElement('div');label.style.cssText='flex:1;min-width:0';
@@ -1073,15 +1066,23 @@ async function searchCommons(q,target){
    const id='commons-'+page.pageid;save.disabled=sounds.some(x=>x.id===id);if(save.disabled)save.textContent='Saved';
    save.onclick=async()=>{save.disabled=true;save.textContent='Downloading…';try{const r=await fetch(info.url);if(!r.ok)throw Error('Download failed');const blob=await r.blob();if(blob.size>30*1024*1024)throw Error('File exceeds 30 MB');const item={id,name,blob,source:'catalog',attribution:{license,url:link.href}};await put('sounds',item);sounds.push(item);renderLibrary();save.textContent='Saved'}catch(e){save.disabled=false;save.textContent='Download';$('catalogStatus').textContent=e.message}};
    row.append(label,play,save);target.append(row);count++;
+   if(count>=35)break;
   }
-  if(!count)target.textContent='No matching licensed sounds under 20 seconds found.';
- }catch(e){if(sequence===commonsSearchSequence)target.textContent='Online search unavailable.'}
+  if(!count)target.textContent='No matching sounds found.';
+ }catch(error){
+  if(sequence===commonsSearchSequence)target.textContent='Search unavailable.';
+ }
 }
+let commonsSearchDebounce=null;
 function renderCatalog(){
  const target=$('catalogList');target.replaceChildren();
  const q=$('catalogSearch').value.trim().toLowerCase();
  commonsSearchSequence++;
- if(q)searchCommons(q,target);
+ clearTimeout(commonsSearchDebounce);
+ if(q){
+  target.textContent='Searching…';
+  commonsSearchDebounce=setTimeout(()=>searchCommons(q,target),320);
+ }
 }
 $('browseSounds').onclick=()=>{$('catalogDialog').showModal();$('catalogSearch').focus({preventScroll:true})};
 $('closeCatalog').onclick=()=>{$('catalogDialog').close()};
