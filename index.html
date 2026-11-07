@@ -1102,8 +1102,8 @@ async function searchCommons(q,target){
    const label=document.createElement('div');label.style.cssText='flex:1;min-width:0';
    const title=document.createElement('strong');title.textContent=name;
    const credit=document.createElement('div');credit.style.cssText='font-size:12px;opacity:.75';credit.textContent=license+' · '+formatSoundDuration(duration);
-   const link=document.createElement('a');link.href='https://commons.wikimedia.org/wiki/'+encodeURIComponent(page.title.replaceAll(' ','_'));link.target='_blank';link.rel='noopener noreferrer';link.textContent='Licence';link.style.fontSize='12px';
-   label.append(title,credit,link);
+   const sourceURL='https://commons.wikimedia.org/wiki/'+encodeURIComponent(page.title.replaceAll(' ','_'));
+   label.append(title,credit);
    const play=document.createElement('button');play.className='secondary';play.textContent='Play';play.onclick=async()=>{
  if(catalogPreview===play._audio&&!catalogPreview.paused){catalogPreview.pause();catalogPreview.currentTime=0;play.textContent='Play';return}
  if(catalogPreview){catalogPreview.pause();catalogPreview.currentTime=0}
@@ -1120,7 +1120,7 @@ async function searchCommons(q,target){
 };
    const save=document.createElement('button');save.className='secondary';save.textContent='Download';
    const id='commons-'+page.pageid;save.disabled=sounds.some(x=>x.id===id);if(save.disabled)save.textContent='Saved';
-   save.onclick=async()=>{save.disabled=true;save.textContent='Downloading…';try{const r=await fetch(info.url);if(!r.ok)throw Error('Download failed');const blob=await r.blob();if(blob.size>30*1024*1024)throw Error('File exceeds 30 MB');const item={id,name,blob,source:'catalog',attribution:{license,url:link.href}};await put('sounds',item);sounds.push(item);renderLibrary();save.textContent='Saved'}catch(e){save.disabled=false;save.textContent='Download';$('catalogStatus').textContent=e.message}};
+   save.onclick=async()=>{save.disabled=true;save.textContent='Downloading…';try{const r=await fetch(info.url);if(!r.ok)throw Error('Download failed');const blob=await r.blob();if(blob.size>30*1024*1024)throw Error('File exceeds 30 MB');const item={id,name,blob,source:'catalog',attribution:{license,url:sourceURL}};await put('sounds',item);sounds.push(item);renderLibrary();save.textContent='Saved'}catch(e){save.disabled=false;save.textContent='Download';$('catalogStatus').textContent=e.message}};
    row.append(label,play,save);target.append(row);count++;
    if(count>=35)break;
   }
