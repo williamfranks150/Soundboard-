@@ -1327,21 +1327,6 @@ body[data-theme="light"] :is(#editor,#catalogDialog,#settingsDialog) .dialoghead
  min-height:100%;
  overflow:visible!important;
 }
-#editor #soundEditPanel #soundToolbar{
- display:flex;
- flex-wrap:nowrap;
- align-items:stretch;
- gap:10px;
- margin:0 0 2px;
-}
-#editor #soundEditPanel #soundToolbar > button{
- flex:1 1 0!important;
- min-width:0!important;
- min-height:46px!important;
- padding:10px 12px!important;
- font-size:16px!important;
- line-height:1.25!important;
-}
 #editor #soundEditPanel #editAreaTop{
  margin:0!important;
 }
@@ -1808,7 +1793,8 @@ function showSoundEditPage(){
  const list=$('soundListPage'),edit=$('soundEditPage');
  if(list.classList.contains('hidden'))return;
  soundListReturnScrollTop=list.scrollTop;
- $('soundEditPanel').prepend($('soundToolbar'));
+ // Recording, importing and searching belong exclusively to My Sounds.
+ // The Edit page begins directly with its close control and sound fields.
  list.classList.add('hidden');
  edit.classList.remove('hidden');
  edit.scrollTop=0;
@@ -1816,7 +1802,6 @@ function showSoundEditPage(){
 function showSoundListPage(){
  const list=$('soundListPage'),edit=$('soundEditPage');
  if(!list.classList.contains('hidden'))return;
- $('minePanel').prepend($('soundToolbar'));
  edit.classList.add('hidden');
  list.classList.remove('hidden');
  if(soundListReturnScrollTop!==null)list.scrollTop=soundListReturnScrollTop;
