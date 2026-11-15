@@ -1589,6 +1589,7 @@ async function setWikipediaTileImage(tile,name){
  img.src=imageURL;
 }
 function render(){
+ preloadBoardSounds();
  const board=$('board');board.replaceChildren();
  slots.forEach((slot,i)=>{
   const cell=document.createElement('div');cell.className='cell';
@@ -1615,10 +1616,17 @@ async function assignToButton(index){
 }
 function cancelAssignment(){assigningSoundId=null;document.body.classList.remove('assigning');$('assignHint').classList.add('hidden')}
 function attachButtonInput(button,index,slot){
- button.addEventListener('contextmenu',event=>event.preventDefault());
- button.addEventListener('click',()=>{
+ const activate=()=>{
   if(assigningSoundId){assignToButton(index);return}
   if(slot.soundId)playSound(slot.soundId,index);
+ };
+ button.addEventListener('contextmenu',event=>event.preventDefault());
+ button.addEventListener('pointerdown',event=>{
+  if(!event.isPrimary||event.button!==0)return;
+  if(!assigningSoundId)activate();
+ });
+ button.addEventListener('click',event=>{
+  if(assigningSoundId||event.detail===0)activate();
  });
 }
 const previewIcons={
@@ -1637,7 +1645,36 @@ function updatePlaybackButtons(){
   button.setAttribute('aria-pressed',String(isPlaying));
  });
 }
+const soundPlayers=new Map();
+let playbackRequest=0;
+function getSoundPlayer(sound){
+ const source=sound.blob||sound.url;
+ const cached=soundPlayers.get(sound.id);
+ if(cached&&cached.source===source)return cached.audio;
+ if(cached){
+  cached.audio.pause();cached.audio.removeAttribute('src');cached.audio.load();
+  if(cached.url.startsWith('blob:'))URL.revokeObjectURL(cached.url);
+ }
+ const url=sound.blob?URL.createObjectURL(sound.blob):sound.url;
+ const audio=new Audio();
+ audio.preload='auto';audio.src=url;audio.load();
+ soundPlayers.set(sound.id,{source,url,audio});
+ return audio;
+}
+function preloadBoardSounds(){
+ const assigned=new Set(slots.map(slot=>slot.soundId).filter(Boolean));
+ for(const [id,cached] of soundPlayers){
+  const sound=sounds.find(item=>item.id===id);
+  if(cached.audio===playing)continue;
+  if(assigned.has(id)&&sound&&(sound.blob||sound.url)===cached.source)continue;
+  cached.audio.pause();cached.audio.removeAttribute('src');cached.audio.load();
+  if(cached.url.startsWith('blob:'))URL.revokeObjectURL(cached.url);
+  soundPlayers.delete(id);
+ }
+ for(const sound of sounds){if(assigned.has(sound.id))getSoundPlayer(sound)}
+}
 function stopPlayback(){
+ playbackRequest++;
  playingButtonIndex=null;
  if(!playing)return;
  const audio=playing;
@@ -1646,10 +1683,6 @@ function stopPlayback(){
  audio.onerror=null;
  audio.pause();
  audio.currentTime=0;
- const url=audio.src;
- audio.removeAttribute('src');
- audio.load();
- if(url.startsWith('blob:'))URL.revokeObjectURL(url);
  updatePlaybackButtons();
 }
 function playSound(id,buttonIndex=null){
@@ -1660,25 +1693,22 @@ function playSound(id,buttonIndex=null){
  stopPlayback();
  if(!sameButton)startSound(sound,buttonIndex);
 }
-function startSound(sound,buttonIndex,audio=new Audio()){
- const previousUrl=audio.src;
- playing=audio;
- playingButtonIndex=buttonIndex;
- audio.soundId=sound.id;
+function startSound(sound,buttonIndex){
+ const audio=getSoundPlayer(sound);
+ const request=++playbackRequest;
+ playing=audio;playingButtonIndex=buttonIndex;audio.soundId=sound.id;
+ audio.currentTime=0;
  const failed=error=>{
-  if(playing!==audio||audio.onerror!==onError)return;
+  if(playing!==audio||request!==playbackRequest)return;
   stopPlayback();
   alert('Playback failed: '+(error?.message||'Unable to play this sound.'));
  };
- const onError=()=>failed(audio.error);
- audio.onerror=onError;
- audio.onended=()=>{if(playing===audio&&audio.ended)stopPlayback()};
+ audio.onerror=()=>failed(audio.error);
+ audio.onended=()=>{if(playing===audio&&request===playbackRequest&&audio.ended)stopPlayback()};
  audio.onplaying=()=>{if(playing===audio)updatePlaybackButtons()};
  audio.onpause=()=>{if(playing===audio)updatePlaybackButtons()};
- audio.src=sound.blob?URL.createObjectURL(sound.blob):sound.url;
- if(previousUrl.startsWith('blob:'))URL.revokeObjectURL(previousUrl);
- updatePlaybackButtons();
  audio.play().catch(failed);
+ updatePlaybackButtons();
 }
 
 function nextRecordingName(){
