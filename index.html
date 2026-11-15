@@ -1656,6 +1656,21 @@ function getPlaybackContext(){
  }
  return playbackContext;
 }
+// Touch browsers grant audio activation on release, not pointerdown.
+// Resume the pending press without starting the clip a second time.
+function activatePlaybackSession(){
+ try{
+  if(navigator.audioSession)navigator.audioSession.type='playback';
+ }catch(_){}
+}
+function unlockPlayback(){
+ if(!playbackContext||playbackContext.state==='running')return;
+ activatePlaybackSession();
+ playbackContext.resume().catch(()=>{});
+}
+document.addEventListener('touchend',unlockPlayback,{capture:true,passive:true});
+document.addEventListener('pointerup',unlockPlayback,{capture:true,passive:true});
+document.addEventListener('click',unlockPlayback,{capture:true});
 function prepareSound(sound){
  const source=sound.blob||sound.url;
  const cached=decodedSounds.get(sound.id);
@@ -1717,6 +1732,7 @@ function playSound(id,buttonIndex=null){
   alert('Playback failed: '+error.message);
  };
  try{
+  activatePlaybackSession();
   const context=getPlaybackContext();
   const ready=context.state==='running'?null:context.resume();
   const entry=prepareSound(sound);
