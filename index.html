@@ -1669,7 +1669,7 @@ function playSound(id,buttonIndex=null){
  if(!sound)return;
  stopDraftPreview();
  const sameButton=!!playing&&playing.soundId===id&&playingButtonIndex===buttonIndex;
- if(playing&&playingButtonIndex!==null&&buttonIndex!==null&&!sameButton){
+ if(playing&&!sameButton){
   boardQueue.push({id,buttonIndex});
   return;
  }
